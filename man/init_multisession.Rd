@@ -7,7 +7,7 @@
 init_multisession()
 }
 \description{
-Configures the {future} package for multisession computation, adapting resource
+Configures the \{future\} package for multisession computation, adapting resource
 settings based on the SLURM job's allocation or system resources.
 }
 \details{
