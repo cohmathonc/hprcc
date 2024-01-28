@@ -1,0 +1,50 @@
+---
+title: "Using Containers in the COH HPRCC Environment"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Using Containers in the COH HPRCC Environment}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+This vignette explains the use of containers for executing jobs on the City of Hope High-Performance Research Computing Center (COH HPRCC) clusters. It covers the advantages of using containers and the default setup of the package that uses Bioconductor containers.
+
+## What are Containers?
+
+Containers are lightweight, standalone, executable packages of software that encapsulate everything needed to run the software, including code, runtime, system tools, system libraries, and settings.
+
+## Why Use Containers in High-Performance Computing (HPC)?
+
+Containers offer several benefits in an HPC environment:
+
+- **Consistency:** They ensure software runs the same way, regardless of the deployment environment.
+- **Reproducibility:** Facilitate reproducible research by providing consistent computing environments.
+- **Isolation:** Help avoid conflicts between different software dependencies.
+- **Portability:** Enable easy transfer and execution of software across different computing systems.
+
+## Advantages of Using Containers in COH HPRCC
+
+Using containers in the COH HPRCC environment brings specific advantages:
+
+- **Environment Standardization:** Provides a uniform environment across different clusters.
+- **Ease of Use:** Simplifies the setup process for complex software stacks.
+- **Resource Efficiency:** Containers use the underlying host OS efficiently compared to traditional virtualization.
+
+## Default Container Setup: Bioconductor 
+
+The package uses the [RStudio Server for Bioconductor](http://hprcc.coh.org/user-guide/rbioc/) container as the default setup for executing R scripts and jobs. 
+
+## Using Other Containers
+
+Any container with `R` in the path can be used with the hprcc package, after setting the appropriate package options:
+
+```{r set-container-options, eval=FALSE}
+options(hprcc.singularity_image_gemini = "/path/to/container/image.sif")
+options(hprcc.singularity_image_apollo = "/path/to/container/image.sif")
+```
+
+Make sure update the `bind_dirs` option for each cluster if the container image is outside the default paths.
+
+You can also set the options in your `.Rprofile` file to avoid setting them every time you start an R session.

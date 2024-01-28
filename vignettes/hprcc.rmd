@@ -1,0 +1,61 @@
+---
+title: "Getting started with hprcc"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with hprcc}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+# Introduction
+
+This vignette provides a quick guide on how to get started with **hprcc**, a tool designed for running jobs
+efficiently on the City of Hope High-Performance Research Computing Center (COH HPRCC) clusters.
+
+You'll need some familiarity with the {targets} package to use **hprcc**. If you're new to targets, check 
+out the [targets user manual](https://books.ropensci.org/targets/) for a quick introduction or the excellent 
+[Carpentries workshop](https://carpentries-incubator.github.io/targets-workshop/index.html) for a more in-depth tutorial.
+
+# Installation
+
+If you use [RStudio for Bioconductor](http://hprcc.coh.org/user-guide/rbioc/), no installation is necessary. **hprcc** 
+is already installed and ready to use.
+
+You can install the development version of **hprcc** from GitHub with:
+
+```
+remotes::install_github("cohmathonc/hprcc")
+```
+
+# A basic {targets} pipeline
+
+Let's start with a simple pipeline that does little more than some basic arithmetic. The details of
+the pipeline are not important, but this nicely demonstrates the ease with which you can farm
+out jobs to cluster nodes according to requirements:
+
+```{r, eval=FALSE}
+library(targets)
+tar_script(
+    {
+        library(hprcc)
+        list(
+            # run on the same node as the main script
+            tar_target(y1, 1 + 1, deployment = "main"),
+            # run on a "small node" - 2 cores, 20 GB RAM, 6 hrs
+            tar_target(y2, 1 + 1),
+            # run on a "medium node" - 12 cores, 80 GB RAM, 6 hrs
+            tar_target(z, y1 + y2, resources = medium)
+        )
+    },
+    ask = FALSE
+)
+tar_make()
+```
+
+Loading the **hprcc** package sets a number of options for {targets} (via [tar_option_set()](https://docs.ropensci.org/targets/reference/tar_option_set.html)) that affect how jobs are run on the cluster: 
+
+ - The storage `format` is set to "qs", which is a bit faster than the default "rds" format.
+ - The `storage` and `retrieval` options are set to "worker", which saves on cluster network traffic. 
+ - The `controller` option is set to a `crew_controller_group` object, which is a collection of `crew_controllers` pre-configured for different SLURM job sizes. The default controller is "small". 
+
+If you wish to change these options, you can do so by calling [tar_option_set()](https://docs.ropensci.org/targets/reference/tar_option_set.html) _after_ loading **hprcc**. 

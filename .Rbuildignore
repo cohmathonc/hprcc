@@ -1,0 +1,12 @@
+^hprcc\.Rproj$
+^\.Rproj\.user$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^jobs$
+^logs$
+^_targets\.R$
+^build\.R$
+^\.github$
+^doc$
+^Meta$
