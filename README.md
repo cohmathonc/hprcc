@@ -25,7 +25,7 @@ For a complete list of configurable settings refer to the [package options](refe
 
 ## Usage
 
-Load the library via `_targets.R` and set resources within `tar_target()` steps. By default, all targets will run on the cluster run with a `small` allocation.
+Load the library via `_targets.R` and set resources within `tar_target()` steps. By default, all targets will run on the cluster with a `small` allocation.
 
 ```
 library(targets)    
