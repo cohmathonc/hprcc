@@ -5,7 +5,7 @@
 
 # hprcc <img src="man/figures/logo.png" align="right" height="120" alt="" />
   
-An R Package to simplify running analyses on City of Hope clusters _Apollo_ and _Gemeni_
+An R Package to simplify running analyses on City of Hope clusters _Apollo_ and _Gemini_
 
 ## Features
 
