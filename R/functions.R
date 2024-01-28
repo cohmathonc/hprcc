@@ -121,15 +121,15 @@ create_controller <- function(name,
 #'
 #' @section r_libs_user:
 #' Sets the path to user R libraries. \cr
-#' Default: \code{options(hprcc.r_libs_user = "~/R/bioc-3.17")}
+#' Default: \code{options(hprcc.r_libs_user = "~/R/bioc-3.18")}
 #'
 #' @section r_libs_site_apollo:
 #' Sets the site-specific library path for the Apollo cluster. \cr
-#' Default: \code{options(hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.17")}
+#' Default: \code{options(hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.18")}
 #'
 #' @section r_libs_site_gemini:
 #' Sets the site-specific library path for the Gemini cluster. \cr
-#' Default: \code{options(hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.17")}
+#' Default: \code{options(hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.18")}
 #'
 #' @section singularity_bin_apollo:
 #' Sets the path to the Singularity binary on the Apollo cluster. \cr
@@ -141,11 +141,11 @@ create_controller <- function(name,
 #'
 #' @section singularity_image_apollo:
 #' Sets the path to the Singularity image on the Apollo cluster. \cr
-#' Default: \code{options(hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif")}
+#' Default: \code{options(hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.18.sif")}
 #'
 #' @section singularity_image_gemini:
 #' Sets the path to the Singularity image on the Gemini cluster. \cr
-#' Default: \code{options(hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif")}
+#' Default: \code{options(hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.18.sif")}
 #'
 #' @section bind_dirs_apollo:
 #' Sets the directories to bind in the Singularity container on the Apollo cluster. \cr
@@ -176,13 +176,13 @@ NULL
     # hprcc options
     options(
         hprcc.cluster = get_cluster(),
-        hprcc.r_libs_user = "~/R/bioc-3.17",
-        hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.17",
-        hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.17",
+        hprcc.r_libs_user = "~/R/bioc-3.18",
+        hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.18",
+        hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.18",
         hprcc.singularity_bin_apollo = "/opt/singularity/3.7.0/bin/singularity",
         hprcc.singularity_bin_gemini = "/packages/easy-build/software/singularity/3.7.0/bin/singularity",
-        hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif",
-        hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif",
+        hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.18.sif",
+        hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.18.sif",
         hprcc.bind_dirs_apollo = "/labs,/opt/singularity,/opt/singularity-images",
         hprcc.bind_dirs_gemini = "/packages/singularity,/ref_genomes,/scratch",
         hprcc.default_partition_apollo = "fast,all",
