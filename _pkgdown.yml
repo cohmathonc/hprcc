@@ -1,4 +1,4 @@
-URL: http://cgt.coh.org/hprcc/
+URL: http://hprcc.coh.org/rbioc/hprcc/
 destination: /net/nfs-irwrsrchnas01/labs/rrockne/MHO/hprcc-www
 package: hprcc
 template:
@@ -11,7 +11,7 @@ navbar:
   components:
     hprcc:
       icon: fa-house
-      href: http://hprcc.coh.org
+      href: http://hprcc.coh.org/user-guide/rbioc/
       aria-label: hprcc
       text: Home
 reference:
