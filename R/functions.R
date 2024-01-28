@@ -117,7 +117,7 @@ create_controller <- function(name,
 #'
 #' @section log_slurm:
 #' Controls whether SLURM job scripts logging is turned on or off. \cr
-#' Default: \code{options(hprcc.log_slurm = TRUE)}
+#' Default: \code{options(hprcc.log_slurm = FALSE)}
 #'
 #' @section r_libs_user:
 #' Sets the path to user R libraries. \cr
