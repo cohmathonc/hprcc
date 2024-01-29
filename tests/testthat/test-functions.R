@@ -1,7 +1,7 @@
 test_that("get_cluster returns 'apollo' for matching hostname", {
     with_mocked_bindings(
-        system2 = function(command, args, stdout) "ppxhpc123",
-        code = {
+        Sys.info = function() list(nodename = "ppxhpc123"),
+        {
             expect_equal(get_cluster(), "apollo")
         }
     )
@@ -9,8 +9,8 @@ test_that("get_cluster returns 'apollo' for matching hostname", {
 
 test_that("get_cluster returns 'gemini' for matching hostname", {
     with_mocked_bindings(
-        system2 = function(command, args, stdout) "g-a-1-2-34",
-        code = {
+        Sys.info = function() list(nodename = "g-a-1-2-34"),
+        {
             expect_equal(get_cluster(), "gemini")
         }
     )
@@ -18,8 +18,8 @@ test_that("get_cluster returns 'gemini' for matching hostname", {
 
 test_that("get_cluster gives a warning for unknown hostname", {
     with_mocked_bindings(
-        system2 = function(command, args, stdout) "unknown",
-        code = {
+        Sys.info = function() list(nodename = "unknown"),
+        {
             expect_warning(get_cluster(), "Unknown cluster")
         }
     )
@@ -38,7 +38,7 @@ test_that("slurm_allocation retrieves correct SLURM job resources", {
             allocation <- slurm_allocation()
             expect_equal(allocation$job_id, "123456")
             expect_equal(allocation$CPUs, 6)
-            expect_equal(allocation$Memory_GB, 60) # 8000M converted to GB
+            expect_equal(allocation$Memory_GB, 60)
         }
     )
 })
@@ -65,6 +65,7 @@ test_that("init_multisession sets up future plan based on resources", {
             Sys.getenv <- function(varname, ...) ""
             init_multisession()
             # Similar assertions for system resources
+            #TODO: Add assertions for system resources
         }
     )
 })

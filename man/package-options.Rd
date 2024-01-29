@@ -10,25 +10,25 @@ This page documents the configurable options available in the \strong{hprcc} pac
 \section{log_slurm}{
 
 Controls whether SLURM job scripts logging is turned on or off. \cr
-Default: \code{options(hprcc.log_slurm = TRUE)}
+Default: \code{options(hprcc.log_slurm = FALSE)}
 }
 
 \section{r_libs_user}{
 
 Sets the path to user R libraries. \cr
-Default: \code{options(hprcc.r_libs_user = "~/R/bioc-3.18")}
+Default: \code{options(hprcc.r_libs_user = "~/R/bioc-3.17")}
 }
 
 \section{r_libs_site_apollo}{
 
 Sets the site-specific library path for the Apollo cluster. \cr
-Default: \code{options(hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.18")}
+Default: \code{options(hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.17")}
 }
 
 \section{r_libs_site_gemini}{
 
 Sets the site-specific library path for the Gemini cluster. \cr
-Default: \code{options(hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.18")}
+Default: \code{options(hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.17")}
 }
 
 \section{singularity_bin_apollo}{
@@ -46,13 +46,13 @@ Default: \code{options(hprcc.singularity_bin_gemini = "/packages/easy-build/soft
 \section{singularity_image_apollo}{
 
 Sets the path to the Singularity image on the Apollo cluster. \cr
-Default: \code{options(hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.18.sif")}
+Default: \code{options(hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif")}
 }
 
 \section{singularity_image_gemini}{
 
 Sets the path to the Singularity image on the Gemini cluster. \cr
-Default: \code{options(hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.18.sif")}
+Default: \code{options(hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif")}
 }
 
 \section{bind_dirs_apollo}{

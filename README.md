@@ -33,8 +33,8 @@ tar_script({
     library(hprcc)
     list(
         tar_target(y1, 1 + 1, deployment = "main"),
-        tar_target(y2, 1 + 1),
-        tar_target(z, y1 + y2, resources = medium)
+        tar_target(y2, 1 + 1, resources = tiny),
+        tar_target(z, y1 + y2, resources = small)
     )}, ask = FALSE)
 tar_make()
 ```

@@ -10,7 +10,7 @@ create_controller(
   slurm_mem_gigabytes,
   slurm_walltime_minutes = 720L,
   slurm_workers = 350L,
-  slurm_queue = default_partition(),
+  slurm_partition = default_partition(),
   slurm_log_dir = "logs",
   slurm_script_dir = tempdir()
 )
@@ -26,7 +26,7 @@ create_controller(
 
 \item{slurm_workers}{Total number of parallel tasks the controller can handle. Defaults to 350.}
 
-\item{slurm_queue}{SLURM partition for job submission, varying by cluster. See \href{reference/package-options.html}{package options} for defaults.}
+\item{slurm_partition}{SLURM partition for job submission, varying by cluster. See \href{reference/package-options.html}{package options} for defaults.}
 
 \item{slurm_log_dir}{Directory path for storing SLURM logs if \code{option(hprcc.log_slurm = TRUE)}. Defaults to "logs".}
 
@@ -55,8 +55,7 @@ resource paths and setups, simplifying job execution across diverse computationa
 }
 \examples{
 if (interactive()) {
-    # Create a controller with specific resource allocation
-    my_controller <- create_controller("my_controller", 4, 8)
+    create_controller("my_controller", 4, 8)
 }
 }
 \seealso{

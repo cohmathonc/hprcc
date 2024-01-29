@@ -6,6 +6,7 @@
 ^jobs$
 ^logs$
 ^_targets\.R$
+^_targets$
 ^build\.R$
 ^\.github$
 ^doc$
