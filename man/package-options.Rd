@@ -43,16 +43,16 @@ Sets the path to the Singularity binary on the Gemini cluster. \cr
 Default: \code{options(hprcc.singularity_bin_gemini = "/packages/easy-build/software/singularity/3.7.0/bin/singularity")}
 }
 
-\section{singularity_image_apollo}{
+\section{singularity_container_apollo}{
 
 Sets the path to the Singularity image on the Apollo cluster. \cr
-Default: \code{options(hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif")}
+Default: \code{options(hprcc.singularity_container_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif")}
 }
 
-\section{singularity_image_gemini}{
+\section{singularity_container_gemini}{
 
 Sets the path to the Singularity image on the Gemini cluster. \cr
-Default: \code{options(hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif")}
+Default: \code{options(hprcc.singularity_container_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif")}
 }
 
 \section{bind_dirs_apollo}{

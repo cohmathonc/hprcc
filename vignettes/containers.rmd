@@ -41,8 +41,8 @@ The package uses the [RStudio Server for Bioconductor](http://hprcc.coh.org/user
 Any container with `R` in the path can be used with the hprcc package, after setting the appropriate package options:
 
 ```{r set-container-options, eval=FALSE}
-options(hprcc.singularity_image_gemini = "/path/to/container/image.sif")
-options(hprcc.singularity_image_apollo = "/path/to/container/image.sif")
+options(hprcc.singularity_container_gemini = "/path/to/container/image.sif")
+options(hprcc.singularity_container_apollo = "/path/to/container/image.sif")
 ```
 
 Make sure update the `bind_dirs` option for each cluster if the container image is outside the default paths.

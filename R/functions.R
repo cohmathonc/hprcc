@@ -31,13 +31,13 @@
 #' Sets the path to the Singularity binary on the Gemini cluster. \cr
 #' Default: \code{options(hprcc.singularity_bin_gemini = "/packages/easy-build/software/singularity/3.7.0/bin/singularity")}
 #'
-#' @section singularity_image_apollo:
+#' @section singularity_container_apollo:
 #' Sets the path to the Singularity image on the Apollo cluster. \cr
-#' Default: \code{options(hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif")}
+#' Default: \code{options(hprcc.singularity_container_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif")}
 #'
-#' @section singularity_image_gemini:
+#' @section singularity_container_gemini:
 #' Sets the path to the Singularity image on the Gemini cluster. \cr
-#' Default: \code{options(hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif")}
+#' Default: \code{options(hprcc.singularity_container_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif")}
 #'
 #' @section bind_dirs_apollo:
 #' Sets the directories to bind in the Singularity container on the Apollo cluster. \cr
@@ -101,11 +101,11 @@ singularity_bin <- function() {
 }
 
 # get this from env - SINGULARITY_CONTAINER
-singularity_image <- function() {
+singularity_container <- function() {
     if (get_cluster() == "apollo") {
-        return(getOption("hprcc.singularity_image_apollo"))
+        return(getOption("hprcc.singularity_container_apollo"))
     } else {
-        return(getOption("hprcc.singularity_image_gemini"))
+        return(getOption("hprcc.singularity_container_gemini"))
     }
 }
 
@@ -178,10 +178,9 @@ create_controller <- function(name,
     r_libs_site <- r_libs_site()
     singularity_bin <- singularity_bin()
     singularity_bind_dirs <- singularity_bind_dirs()
-    singularity_image <- singularity_image()
+    singularity_container <- singularity_container()
     # Logging
     log_slurm <- getOption("hprcc.log_slurm")
-
     if (isTRUE(log_slurm)) dir.create(here::here(slurm_log_dir), showWarnings = FALSE, recursive = TRUE) else NULL
     log_output <- if (isTRUE(log_slurm)) here::here(glue::glue("{slurm_log_dir}/slurm-%j.out")) else NULL
     log_error <- if (isTRUE(log_slurm)) here::here(glue::glue("{slurm_log_dir}/slurm-%j.err")) else NULL
@@ -196,7 +195,7 @@ cd {here::here()} \
 --env R_LIBS_USER={r_libs_user} \\
 --env R_LIBS_SITE={r_libs_site} \\
 -B {singularity_bind_dirs} \\
-{singularity_image} \\")
+{singularity_container} \\")
 
     crew.cluster::crew_controller_slurm(
         name = name,
@@ -213,22 +212,6 @@ cd {here::here()} \
     )
 }
 
-# #' Initialize targets options
-# #'
-# #' This function initializes the options for the targets package.
-# #' It sets the format, storage, retrieval, controller, and resources options.
-# #' The controller options specify the computing resources to be used for different job sizes.
-# #' The resources option specifies the crew controller to be used.
-# #' 
-# #' @importFrom targets tar_option_set
-# #' @importFrom targets tar_resources
-# #' @importFrom crew crew_controller_group
-# #' 
-# #' @export
-# init_targets <- function() {
-# NULL
-# }
-
 
 #-----------------------------------------------------------------------------
 #' @importFrom targets tar_option_set
@@ -237,19 +220,25 @@ cd {here::here()} \
 .onLoad <- function(libname, pkgname) {
     # hprcc options
     options(
+        # Defaults
         hprcc.r_libs_user = "~/R/bioc-3.17",
         hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.17",
         hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.17",
         hprcc.singularity_bin_apollo = "/opt/singularity/3.7.0/bin/singularity",
         hprcc.singularity_bin_gemini = "/packages/easy-build/software/singularity/3.7.0/bin/singularity",
-        hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif",
-        hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif",
+        hprcc.singularity_container_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif",
+        hprcc.singularity_container_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif",
         hprcc.bind_dirs_apollo = "/labs,/opt/singularity,/opt/singularity-images",
         hprcc.bind_dirs_gemini = "/packages/singularity,/ref_genomes,/scratch",
         hprcc.default_partition_apollo = "fast,all",
         hprcc.default_partition_gemini = "defq",
         hprcc.log_slurm = FALSE)
+    # Set hprcc options via Singularity environment variables
+    singularity_container <- Sys.getenv("SINGULARITY_CONTAINER")
+    singularity_bind_dirs <- Sys.getenv("SINGULARITY_BIND")
+    singularity_name <- Sys.getenv("SINGULARITY_NAME")
 
+    # Targets options
     targets::tar_option_set(
         packages = "hprcc",
         format = "qs",
