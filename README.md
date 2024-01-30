@@ -15,6 +15,7 @@ You can easily configure your own SLURM resource requests (CPU, RAM, walltime) t
 
 | Job Type | CPUs | Memory (GB) | Time (minutes) |
 |----------|------|-------------|----------------|
+| tiny     | 1    | 1           | 60             |
 | small    | 2    | 20          | 360            |
 | medium   | 12   | 80          | 360            |
 | large    | 20   | 200         | 720            |
@@ -44,7 +45,7 @@ tar_make()
 To install this package, you can use the `remotes` package in R:
 
 ```r
-library(remotes)
+if (!require("remotes")) install.packages("remotes")
 remotes::install_github("cohmathonc/hprcc")
 ```
 
