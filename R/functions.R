@@ -110,7 +110,7 @@ singularity_image <- function() {
 }
 
 # get this from env - SINGULARITY_BIND
-bind_dirs <- function() {
+singularity_bind_dirs <- function() {
     if (get_cluster() == "apollo") {
         return(getOption("hprcc.bind_dirs_apollo"))
     } else {
@@ -174,9 +174,13 @@ create_controller <- function(name,
                               slurm_script_dir = tempdir()) {
     job_id <- Sys.getenv("SLURM_JOB_ID")
     nodename <- Sys.info()["nodename"]
+    r_libs_user <- getOption("hprcc.r_libs_user")
+    r_libs_site <- r_libs_site()
+    singularity_bin <- singularity_bin()
+    singularity_bind_dirs <- singularity_bind_dirs()
+    singularity_image <- singularity_image()
     # Logging
     log_slurm <- getOption("hprcc.log_slurm")
-    r_libs_user <- getOption("hprcc.r_libs_user")
 
     if (isTRUE(log_slurm)) dir.create(here::here(slurm_log_dir), showWarnings = FALSE, recursive = TRUE) else NULL
     log_output <- if (isTRUE(log_slurm)) here::here(glue::glue("{slurm_log_dir}/slurm-%j.out")) else NULL
@@ -188,11 +192,11 @@ create_controller <- function(name,
 
     script_lines <- glue::glue("#SBATCH --mem {slurm_mem_gigabytes}G \
 cd {here::here()} \
-{singularity_bin()} exec \\
+{singularity_bin} exec \\
 --env R_LIBS_USER={r_libs_user} \\
---env R_LIBS_SITE={r_libs_site()} \\
--B {bind_dirs()} \\
-{singularity_image()} \\")
+--env R_LIBS_SITE={r_libs_site} \\
+-B {singularity_bind_dirs} \\
+{singularity_image} \\")
 
     crew.cluster::crew_controller_slurm(
         name = name,
