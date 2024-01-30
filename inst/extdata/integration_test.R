@@ -14,12 +14,13 @@
     # exit 0
 
 library(targets)
-dir <- here::here("targets_temp_dir")
-dir.create(dir, showWarnings = FALSE)
 
 old <- getwd()
+dir <- paste0(old, "/targets_temp_dir")
+dir.create(dir, showWarnings = FALSE)
 setwd(dir)
-tar_config_set(store = glue::glue("{dir}/_targets"))
+
+tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
@@ -32,6 +33,7 @@ tar_script(
     },
     ask = FALSE
 )
+
 tar_make()
 
 setwd(old)
