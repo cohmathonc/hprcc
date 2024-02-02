@@ -24,6 +24,7 @@ reference:
       - large
       - medium
       - small
+      - tiny
 
   - title: "SLURM Controllers and Utilities"
     desc: "Tools for setting up and managing SLURM job controllers."
