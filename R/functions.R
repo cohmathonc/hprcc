@@ -104,14 +104,15 @@ create_controller <- function(name,
     r_libs_user <- getOption("hprcc.r_libs_user")
     r_libs_site <- r_libs_site()
     slurm_script_dir <- getOption("hprcc.slurm_script_dir", tempdir())
+    slurm_log_dir <- paste0(getwd(), "/", slurm_log_dir)
     singularity_bin <- singularity_bin()
     singularity_bind_dirs <- singularity_bind_dirs()
-    singularity_image <- singularity_image()
+    singularity_container <- singularity_container()
     # Logging
-    log_slurm <- getOption("hprcc.log_slurm")
-    if (isTRUE(log_slurm)) dir.create(here::here(slurm_log_dir), showWarnings = FALSE, recursive = TRUE) else NULL
-    log_output <- if (isTRUE(log_slurm)) here::here(glue::glue("{slurm_log_dir}/slurm-%j.out")) else NULL
-    log_error <- if (isTRUE(log_slurm)) here::here(glue::glue("{slurm_log_dir}/slurm-%j.err")) else NULL
+    log_slurm <- getOption("hprcc.log_slurm", FALSE)
+    if (isTRUE(log_slurm)) dir.create(slurm_log_dir, showWarnings = FALSE, recursive = TRUE) else NULL
+    log_output <- if (isTRUE(log_slurm)) glue::glue("{slurm_log_dir}/slurm-%j.out") else NULL
+    log_error <- if (isTRUE(log_slurm)) glue::glue("{slurm_log_dir}/slurm-%j.err") else NULL
     # script directory
     if (slurm_script_dir != tempdir()) {
         dir.create(slurm_script_dir, showWarnings = FALSE, recursive = TRUE)
@@ -123,7 +124,7 @@ cd {getwd()} \
 --env R_LIBS_USER={r_libs_user} \\
 --env R_LIBS_SITE={r_libs_site} \\
 -B {singularity_bind_dirs} \\
-{singularity_image} \\")
+{singularity_container} \\")
 
     crew.cluster::crew_controller_slurm(
         name = name,
@@ -151,19 +152,21 @@ r_libs_site <- function() {
 }
 
 singularity_bin <- function() {
-    if (get_cluster() == "apollo") {
+    if (!is.null(getOption("hprcc.singularity_bin"))) {
+        return(getOption("hprcc.singularity_bin"))
+    } else if (get_cluster() == "apollo") {
         return(getOption("hprcc.singularity_bin_apollo"))
-    } else {
+    } else if (get_cluster() == "gemini") {
         return(getOption("hprcc.singularity_bin_gemini"))
     }
 }
 
 # get this from env - SINGULARITY_CONTAINER
-singularity_image <- function() {
+singularity_container <- function() {
     if (get_cluster() == "apollo") {
-        return(getOption("hprcc.singularity_image_apollo"))
+        return(getOption("hprcc.singularity_container_apollo"))
     } else {
-        return(getOption("hprcc.singularity_image_gemini"))
+        return(getOption("hprcc.singularity_container_gemini"))
     }
 }
 
@@ -218,18 +221,17 @@ configure_targets_options <- function() { # Targets options
     # hprcc options
     options(
         hprcc.r_libs_user = "~/R/bioc-3.17",
-        hprcc.slurm_script_dir = tempdir(),
         hprcc.r_libs_site_apollo = "/opt/singularity-images/rbioc/rlibs/bioc-3.17",
         hprcc.r_libs_site_gemini = "/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.17",
         hprcc.singularity_bin_apollo = "/opt/singularity/3.7.0/bin/singularity",
         hprcc.singularity_bin_gemini = "/packages/easy-build/software/singularity/3.7.0/bin/singularity",
-        hprcc.singularity_image_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif",
-        hprcc.singularity_image_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif",
+        hprcc.singularity_container_apollo = "/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif",
+        hprcc.singularity_container_gemini = "/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif",
         hprcc.bind_dirs_apollo = "/labs,/opt/singularity,/opt/singularity-images",
         hprcc.bind_dirs_gemini = "/packages/singularity,/ref_genomes,/scratch",
         hprcc.default_partition_apollo = "fast,all",
         hprcc.default_partition_gemini = "defq",
-        hprcc.log_slurm = TRUE)
+        hprcc.slurm_script_dir = tempdir())
 
     # Set targets options
     configure_targets_options()
