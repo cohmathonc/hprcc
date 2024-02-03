@@ -11,8 +11,7 @@ create_controller(
   slurm_walltime_minutes = 720L,
   slurm_workers = 350L,
   slurm_partition = default_partition(),
-  slurm_log_dir = "logs",
-  slurm_script_dir = tempdir()
+  slurm_log_dir = "logs"
 )
 }
 \arguments{
@@ -26,36 +25,36 @@ create_controller(
 
 \item{slurm_workers}{Total number of parallel tasks the controller can handle. Defaults to 350.}
 
-\item{slurm_partition}{SLURM partition for job submission, varying by cluster. See \href{reference/package-options.html}{package options} for defaults.}
+\item{slurm_partition}{SLURM partition for job submission. Default set by cluster. See \href{../reference/package-options.html}{package options} for defaults.}
 
-\item{slurm_log_dir}{Directory path for storing SLURM logs if \code{option(hprcc.log_slurm = TRUE)}. Defaults to "logs".}
-
-\item{slurm_script_dir}{Directory path for storing SLURM job scripts. Defaults to the session's temporary directory.}
+\item{slurm_log_dir}{Path for storing SLURM logs when \code{option(hprcc.log_slurm = TRUE)}. Defaults to "logs" in the working directory.}
 }
 \value{
 A \code{crew_controller} object, ready to manage SLURM job submissions and monitoring.
 }
 \description{
-Configures and initializes a controller for managing SLURM jobs on City of Hope clusters.
-The function leverages the \code{crew.cluster} package to facilitate job execution, managing
-resources such as CPU, memory, walltime, and directing SLURM logs and scripts.
+Configures and initializes a
+\href{https://wlandau.github.io/crew.cluster/reference/crew_controller_slurm.html}{\code{controller}}
+for managing SLURM jobs on City of Hope clusters using the
+\{\href{https://wlandau.github.io/crew.cluster/}{\code{crew.cluster}}\} package to facilitate job
+execution, managing resources such as CPU, memory, walltime, and writing SLURM logs and scripts.
 }
 \details{
 \code{create_controller} streamlines SLURM job setup on COH clusters using
 Singularity containers for consistent computing environments. Singularity containers
-package software and dependencies, ensuring that jobs run reliably across different
-clusters like Apollo and Gemini. This approach aids in computational reproducibility and
-solves environment inconsistencies in cluster computing.
+package software and dependencies, ensuring that jobs run reliably across both
+clusters. This approach aids in computational reproducibility and
+solves environment inconsistencies between Apollo and Gemini.
 
 The function allows customization of SLURM job parameters, including CPUs, memory,
 and walltime, while managing SLURM logs and script directories. It abstracts cluster-specific
 configurations, making it easier to run jobs without detailed knowledge of the underlying
 cluster setup. This functionality is especially useful in environments with varying
-resource paths and setups, simplifying job execution across diverse computational platforms.
+resource paths and setups, simplifying job execution across the two platforms.
 }
 \examples{
 if (interactive()) {
-    create_controller("my_controller", 4, 8)
+  create_controller("my_controller", 4, 8)
 }
 }
 \seealso{
