@@ -6,6 +6,9 @@ on:
       - "*"
   release:
     types: [published]
+  pull_request:  # Add this section
+    branches:
+      - main  # Specify the branch(es) for which pull requests should trigger the action
 
 name: R-CMD-check
 
