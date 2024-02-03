@@ -1,5 +1,5 @@
 ## Integration test for the hprcc package
-# Run this using git hook pre-push 
+# Run this using git hook pre-push
 # your local .git/hooks/pre-push should look like
 
     # Rscript inst/extdata/integration_test.R
@@ -14,6 +14,7 @@
     # exit 0
 
 library(targets)
+Sys.setenv(TAR_WARN = "false")
 
 old <- getwd()
 dir <- paste0(old, "/targets_temp_dir")
@@ -24,7 +25,8 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
-        library(hprcc)
+        #library(hprcc)
+        devtools::load_all()
         list(
             tar_target(y1, 1 + 1, deployment = "main"),
             tar_target(y2, 1 + 1, resources = tiny),
