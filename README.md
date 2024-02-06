@@ -9,7 +9,7 @@ An R Package to simplify running analyses on City of Hope clusters _Apollo_ and 
 
 ## Features
 
-**hprcc** configures [targets](https://books.ropensci.org/targets/) pipelines for COH clusters _Apollo_ and _Gemini_. Targets provides a simple but powerful framework for running R code that avoids unnecessary computation for tasks that are up to date, natively supports parallel computing, and abstracts files as R objects. Also included are some handy functions for logging R jobs run via SLURM.
+**hprcc** configures [targets](https://books.ropensci.org/targets/) pipelines for COH clusters _Apollo_ and _Gemini_. Targets provides a simple but powerful framework for running R code. It avoids unnecessary computation for tasks that are up to date, natively supports parallel computing and abstracts files as R objects. Also included are some handy functions for logging R jobs run via SLURM.
 
 You can easily configure your own SLURM resource requests (CPU, RAM, walltime) to run multiprocess jobs on cluster nodes with `create_controller()` or use pre-configured shortcuts according to the job type:
 
