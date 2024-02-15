@@ -238,7 +238,7 @@ configure_targets_options <- function() { # Targets options
 }
 
 # -----------------------------------------------------------------------------
-.onLoad <- function(libname, pkgname) {
+.onAttach <- function(libname, pkgname) {
   # Set targets options
   configure_targets_options()
 }
