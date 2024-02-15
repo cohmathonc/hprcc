@@ -1,7 +1,7 @@
 
 # ------------------------------------------------------------------------------
-# This function isn't that useful - it's a summary of the instant memory and CPU
-# usage
+# This function isn't that useful - it's a summary of the instantaneous memory
+# and CPU usage
 #' @importFrom ps ps_memory_info
 #' @importFrom ps ps_cpu_times
 get_usage_summary <- function() {

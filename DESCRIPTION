@@ -1,6 +1,6 @@
 Package: hprcc
 Title: Simplify running R jobs on City of Hope clusters
-Version: 0.0.0.9003
+Version: 0.0.0.9004
 Authors@R: 
     person("Denis", "O'Meally", , "domeally@coh.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-7749-9506"))

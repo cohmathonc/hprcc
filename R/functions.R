@@ -43,7 +43,7 @@ get_cluster <- function() {
   hostname <- as.character(Sys.info()["nodename"])
   if (grepl("ppxhpc", hostname)) {
     return("apollo")
-  } else if (grepl("^g-[a-z]-[0-9]-[0-9]-[0-9]{2}", hostname)) {
+  } else if (grepl("^g-[a-z]-[0-9]-[0-9]-[0-9]{2}|^gemini", hostname)) {
     return("gemini")
   } else {
     warning("Unknown cluster")
@@ -238,7 +238,7 @@ configure_targets_options <- function() { # Targets options
 }
 
 # -----------------------------------------------------------------------------
-.onLoad <- function(libname, pkgname) {
+.onAttach <- function(libname, pkgname) {
   # Set targets options
   configure_targets_options()
 }
