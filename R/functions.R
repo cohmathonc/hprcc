@@ -96,6 +96,15 @@ create_controller <- function(name,
                               slurm_workers = 350L,
                               slurm_partition = default_partition(),
                               slurm_log_dir = "logs") {
+                                    # GPU check
+    if (grepl("gpu", slurm_partition)) {
+        # check we're on gemeni or stop with an error
+        if (get_cluster() != "gemini") {
+            stop("GPU jobs are only supported on the Gemini cluster.")
+        }
+        slurm_cpus <- 1
+    }
+
   job_id <- Sys.getenv("SLURM_JOB_ID")
   nodename <- Sys.info()["nodename"]
   r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER"))
