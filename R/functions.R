@@ -119,13 +119,13 @@ create_controller <- function(name,
   singularity_container <- singularity_container()
   # Logging #TODO
   log_slurm <- getOption("hprcc.log_slurm", FALSE)
-  if (isTRUE(log_slurm)) dir.create(log_dir, showWarnings = FALSE, recursive = TRUE) else NULL
-  log_output <- if (isTRUE(log_slurm)) glue::glue("{log_dir}/slurm-%j.out") else NULL
-  log_error <- if (isTRUE(log_slurm)) glue::glue("{log_dir}/slurm-%j.err") else NULL
+  if (isTRUE(log_slurm)) dir.create(log_dir, showWarnings = FALSE, recursive = TRUE)
+  log_output <- if (isTRUE(log_slurm)) glue::glue("{log_dir}/slurm-%j.out") else "/dev/null"
+  log_error <- if (isTRUE(log_slurm)) glue::glue("{log_dir}/slurm-%j.err") else "/dev/null"
   # script directory #TODO
   if (slurm_script_dir != tempdir()) {
     dir.create(here::here(slurm_script_dir), showWarnings = FALSE, recursive = TRUE)
-    slurm_script_dir<-here::here(slurm_script_dir)
+    slurm_script_dir <- here::here(slurm_script_dir)
   }
 
   script_lines <- glue::glue("#SBATCH --mem {slurm_mem_gigabytes}G \
