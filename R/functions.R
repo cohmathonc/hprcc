@@ -64,7 +64,7 @@ get_cluster <- function() {
 #' @param slurm_walltime_minutes Maximum allowed execution time per task, in minutes. Defaults to 720 (12 hours).
 #' @param slurm_workers Total number of parallel tasks the controller can handle. Defaults to 350.
 #' @param slurm_partition SLURM partition for job submission. Default set by cluster. See [package options](../reference/package-options.html) for defaults.
-#' @param slurm_log_dir Path for storing SLURM logs when `option(hprcc.log_slurm = TRUE)`. Defaults to "logs" in the working directory.
+#' @param slurm_log_dir Path for storing SLURM logs when `option(hprcc.log_slurm = TRUE)`. Defaults to "logs" in the project directory.
 #'
 #' @details
 #' `create_controller` streamlines SLURM job setup on COH clusters using
@@ -83,7 +83,7 @@ get_cluster <- function() {
 #' @export
 #' @examples
 #' if (interactive()) {
-#'   create_controller("my_controller", 4, 8)
+#'   create_controller("my_controller", slurm_cpus = 4, slurm_gigabytes = 8)
 #' }
 #' @importFrom glue glue
 #' @importFrom here here
@@ -96,35 +96,40 @@ create_controller <- function(name,
                               slurm_workers = 350L,
                               slurm_partition = default_partition(),
                               slurm_log_dir = "logs") {
-                                    # GPU check
+    # GPU check
     if (grepl("gpu", slurm_partition)) {
-        # check we're on gemeni or stop with an error
         if (get_cluster() != "gemini") {
             stop("GPU jobs are only supported on the Gemini cluster.")
         }
-        slurm_cpus <- 1
+        if (slurm_cpus > 8) {
+        stop("For GPU partitions, the number of CPUs must be less than or equal to 8.")
+        }
+        gpu_req <- glue::glue("#SBATCH --gres gpu:1 \n#SBATCH --ntasks=1 \n")
+    } else {
+        gpu_req <- ""
     }
-
+  log_dir <- ifelse(slurm_log_dir == "logs", here::here("logs"), slurm_log_dir) 
   job_id <- Sys.getenv("SLURM_JOB_ID")
   nodename <- Sys.info()["nodename"]
   r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER"))
   r_libs_site <- r_libs_site()
   slurm_script_dir <- getOption("hprcc.slurm_script_dir", tempdir())
-  slurm_log_dir <- paste0(getwd(), "/", slurm_log_dir)
   singularity_bin <- singularity_bin()
   singularity_bind_dirs <- singularity_bind_dirs()
   singularity_container <- singularity_container()
   # Logging #TODO
   log_slurm <- getOption("hprcc.log_slurm", FALSE)
-  if (isTRUE(log_slurm)) dir.create(slurm_log_dir, showWarnings = FALSE, recursive = TRUE) else NULL
-  log_output <- if (isTRUE(log_slurm)) glue::glue("{slurm_log_dir}/slurm-%j.out") else NULL
-  log_error <- if (isTRUE(log_slurm)) glue::glue("{slurm_log_dir}/slurm-%j.err") else NULL
+  if (isTRUE(log_slurm)) dir.create(log_dir, showWarnings = FALSE, recursive = TRUE) else NULL
+  log_output <- if (isTRUE(log_slurm)) glue::glue("{log_dir}/slurm-%j.out") else NULL
+  log_error <- if (isTRUE(log_slurm)) glue::glue("{log_dir}/slurm-%j.err") else NULL
   # script directory #TODO
   if (slurm_script_dir != tempdir()) {
-    dir.create(slurm_script_dir, showWarnings = FALSE, recursive = TRUE)
+    dir.create(here::here(slurm_script_dir), showWarnings = FALSE, recursive = TRUE)
+    slurm_script_dir<-here::here(slurm_script_dir)
   }
 
   script_lines <- glue::glue("#SBATCH --mem {slurm_mem_gigabytes}G \
+{gpu_req} \
 cd {getwd()} \
 {singularity_bin} exec \\
 --env R_LIBS_USER={r_libs_user} \\
@@ -221,25 +226,32 @@ default_partition <- function() {
 #' @importFrom targets tar_option_set
 #' @importFrom targets tar_resources
 #' @importFrom crew crew_controller_group
-configure_targets_options <- function() { # Targets options
+configure_targets_options <- function() {
+    # Define the common controllers
+  controllers <- list(
+    create_controller(name = "tiny", slurm_cpus = 1, slurm_mem_gigabytes = 1, slurm_walltime_minutes = 60),
+    create_controller("small", slurm_cpus = 2, slurm_mem_gigabytes = 20, slurm_walltime_minutes = 360),
+    create_controller("medium", slurm_cpus = 12, slurm_mem_gigabytes = 80, slurm_walltime_minutes = 360),
+    create_controller("large", slurm_cpus = 20, slurm_mem_gigabytes = 200),
+    create_controller("bigmem", slurm_cpus = 10, slurm_mem_gigabytes = 500, slurm_walltime_minutes = 360),
+    create_controller("huge", slurm_cpus = 40, slurm_mem_gigabytes = 100, slurm_walltime_minutes = 120)
+  )
+  
+  # Conditionally add GPU controllers if on the 'gemini' cluster
+  if (get_cluster() == "gemini") {
+    gpu_controllers <- list(
+      create_controller("gpu_medium", slurm_cpus = 4, slurm_mem_gigabytes = 60, slurm_walltime_minutes = 120, slurm_partition = "gpu"),
+      create_controller("gpu_large", slurm_cpus = 8, slurm_mem_gigabytes = 120, slurm_walltime_minutes = 240, slurm_partition = "gpu")
+    )
+    controllers <- c(controllers, gpu_controllers)
+  }
+
+  # Targets options
   targets::tar_option_set(
     format = "qs",
     storage = "worker",
     retrieval = "worker",
-    controller = crew::crew_controller_group(
-      # tiny
-      create_controller(name = "tiny", slurm_cpus = 1, slurm_mem_gigabytes = 1, slurm_walltime_minutes = 60),
-      # small
-      create_controller("small", 2, 20, 360),
-      # medium
-      create_controller("medium", 12, 80, 360),
-      # large
-      create_controller("large", 20, 200),
-      # big memory job
-      create_controller("bigmem", 10, 500, 360),
-      # huge
-      create_controller("huge", 40, 100, 120)
-    ),
+    controller = do.call(crew::crew_controller_group, controllers),
     resources = targets::tar_resources(
       crew = targets::tar_resources_crew(controller = "small")
     )
