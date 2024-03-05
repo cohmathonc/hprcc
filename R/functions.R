@@ -129,8 +129,8 @@ create_controller <- function(name,
   }
 
   script_lines <- glue::glue("#SBATCH --mem {slurm_mem_gigabytes}G \
+#SBATCH --chdir {slurm_script_dir} \
 {gpu_req} \
-cd {getwd()} \
 {singularity_bin} exec \\
 --env R_LIBS_USER={r_libs_user} \\
 --env R_LIBS_SITE={r_libs_site} \\
