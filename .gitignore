@@ -4,11 +4,12 @@
 .httr-oauth
 .DS_Store
 .quarto
-logs
+logs/*
+jobs/*
 _targets.R
 docs
 jobs
-/doc/
-/Meta/
+doc/*
+Meta/*
 _targets/meta/meta
 _targets/.gitignore

@@ -90,3 +90,32 @@ huge <- targets::tar_resources(
 bigmem <- targets::tar_resources(
     crew = targets::tar_resources_crew(controller = "bigmem")
 )
+#' GPU Medium SLURM Resource Configuration
+#'
+#' Establishes SLURM resources for tasks requiring GPU capabilities via
+#' `targets::tar_resources` with a "gpu_medium" controller. Suitable for medium-sized GPU-intensive jobs.
+#'
+#' | CPUs | GPUs | Memory (GB) | Time (minutes) | Partition |
+#' |------|------|-------------|----------------|-----------|
+#' | 4    | 1    | 60          | 120            | gpu       |
+#'
+#' @export
+#' @seealso \code{\link[targets]{tar_resources}}, \code{\link[targets]{tar_resources_crew}}
+gpu_medium <- targets::tar_resources(
+  crew = targets::tar_resources_crew(controller = "gpu_medium")
+)
+
+#' GPU Large SLURM Resource Configuration
+#'
+#' Establishes SLURM resources for tasks requiring GPU capabilities via
+#' `targets::tar_resources` with a "gpu_large" controller. Suitable for large GPU-intensive jobs.
+#'
+#' | CPUs | GPUs | Memory (GB) | Time (minutes) | Partition |
+#' |------|------|-------------|----------------|-----------|
+#' | 8    | 1    | 120         | 240            | gpu       |
+#'
+#' @export
+#' @seealso \code{\link[targets]{tar_resources}}, \code{\link[targets]{tar_resources_crew}}
+gpu_large <- targets::tar_resources(
+  crew = targets::tar_resources_crew(controller = "gpu_large")
+)
