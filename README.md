@@ -21,6 +21,8 @@ You can easily configure your own SLURM resource requests (CPU, RAM, walltime) t
 | large    | 20   | 200         | 720            |
 | bigmem   | 10   | 500         | 360            |
 | huge     | 40   | 100         | 120            |
+| gpu_medium | 4  | 60          | 120            |
+| gpu_large  | 8  | 120         | 120            |
 
 For a complete list of configurable settings refer to the [package options](reference/package-options.html).
 
