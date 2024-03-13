@@ -16,15 +16,19 @@ navbar:
       text: Home
 reference:
 
-  - title: "SLURM Resource Configurations"
-    desc: "Configure resources for SLURM job execution."
+  - title: "Preconfigured SLURM Resources"
+    desc: "Preconfigured resources for SLURM job execution."
     contents:
-      - bigmem
-      - huge
-      - large
-      - medium
-      - small
       - tiny
+      - small
+      - medium
+      - large
+      - large_mem
+      - xlarge
+      - huge
+      - gpu_medium
+      - gpu_large
+
 
   - title: "SLURM Controllers and Utilities"
     desc: "Tools for setting up and managing SLURM job controllers."

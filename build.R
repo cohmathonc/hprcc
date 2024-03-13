@@ -38,3 +38,7 @@ pkgdown::build_site()
 
 # Draft a release for GitHub
 usethis::use_github_release()
+
+# Publish to hprcc.coh.org
+rsync -avz --delete /labs/rrockne/MHO/hprcc-www/ domeally@cgt.coh.org:/home/domeally/omeally/h
+prcc/docs/user-guide/rbioc/hprcc

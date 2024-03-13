@@ -27,7 +27,7 @@ create_controller(
 
 \item{slurm_partition}{SLURM partition for job submission. Default set by cluster. See \href{../reference/package-options.html}{package options} for defaults.}
 
-\item{slurm_log_dir}{Path for storing SLURM logs when \code{option(hprcc.log_slurm = TRUE)}. Defaults to "logs" in the working directory.}
+\item{slurm_log_dir}{Path for storing SLURM logs when \code{option(hprcc.log_slurm = TRUE)}. Defaults to "logs" in the project directory.}
 }
 \value{
 A \code{crew_controller} object, ready to manage SLURM job submissions and monitoring.
@@ -54,7 +54,7 @@ resource paths and setups, simplifying job execution across the two platforms.
 }
 \examples{
 if (interactive()) {
-  create_controller("my_controller", 4, 8)
+  create_controller("my_controller", slurm_cpus = 4, slurm_gigabytes = 8)
 }
 }
 \seealso{

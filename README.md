@@ -13,16 +13,19 @@ An R Package to simplify running analyses on City of Hope clusters _Apollo_ and 
 
 You can easily configure your own SLURM resource requests (CPU, RAM, walltime) to run multiprocess jobs on cluster nodes with `create_controller()` or use pre-configured shortcuts according to the job type:
 
-| Job Type | CPUs | Memory (GB) | Time (minutes) |
-|----------|------|-------------|----------------|
-| tiny     | 1    | 1           | 60             |
-| small    | 2    | 20          | 360            |
-| medium   | 12   | 80          | 360            |
-| large    | 20   | 200         | 720            |
-| bigmem   | 10   | 500         | 360            |
-| huge     | 40   | 100         | 120            |
-| gpu_medium | 4  | 60          | 120            |
-| gpu_large  | 8  | 120         | 120            |
+| Job Type    | CPUs | Memory (GB) | Time (minutes) |
+|-------------|------|-------------|----------------|
+| tiny        | 2    | 8           | 60             |
+| small       | 2    | 20          | 360            |
+| medium      | 4    | 40          | 360            |
+| large       | 8    | 80          | 360            |
+| large_mem   | 8    | 600         | 360            |
+| xlarge      | 20   | 200         | 360            |
+| huge        | 40   | 200         | 120            |
+| gpu_medium^†^ | 4    | 60          | 120            |
+| gpu_large^†^ | 8    | 120         | 240            |
+
+^†^ GPUs only available on _Gemini_
 
 For a complete list of configurable settings refer to the [package options](reference/package-options.html).
 

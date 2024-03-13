@@ -229,12 +229,13 @@ default_partition <- function() {
 configure_targets_options <- function() {
     # Define the common controllers
   controllers <- list(
-    create_controller(name = "tiny", slurm_cpus = 1, slurm_mem_gigabytes = 1, slurm_walltime_minutes = 60),
+    create_controller(name = "tiny", slurm_cpus = 2, slurm_mem_gigabytes = 8, slurm_walltime_minutes = 60),
     create_controller("small", slurm_cpus = 2, slurm_mem_gigabytes = 20, slurm_walltime_minutes = 360),
-    create_controller("medium", slurm_cpus = 12, slurm_mem_gigabytes = 80, slurm_walltime_minutes = 360),
-    create_controller("large", slurm_cpus = 20, slurm_mem_gigabytes = 200),
-    create_controller("bigmem", slurm_cpus = 10, slurm_mem_gigabytes = 500, slurm_walltime_minutes = 360),
-    create_controller("huge", slurm_cpus = 40, slurm_mem_gigabytes = 100, slurm_walltime_minutes = 120)
+    create_controller("medium", slurm_cpus = 4, slurm_mem_gigabytes = 40, slurm_walltime_minutes = 360),
+    create_controller("large", slurm_cpus = 8, slurm_mem_gigabytes = 80, slurm_walltime_minutes = 360),
+    create_controller("large_mem", slurm_cpus = 8, slurm_mem_gigabytes = 600, slurm_walltime_minutes = 360),
+    create_controller("xlarge", slurm_cpus = 20, slurm_mem_gigabytes = 200),
+    create_controller("huge", slurm_cpus = 40, slurm_mem_gigabytes = 200, slurm_walltime_minutes = 120)
   )
   
   # Conditionally add GPU controllers if on the 'gemini' cluster
