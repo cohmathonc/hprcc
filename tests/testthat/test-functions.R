@@ -50,11 +50,18 @@ test_that("init_multisession sets up future plan based on resources", {
         list(job_id = "123456", CPUs = 4, Memory_GB = 8)
     }
     mock_system <- function(command, intern = TRUE) "8" # System memory in GB
+    # Mock parallelly::makeClusterPSOCK to return a simplified cluster object
+    mock_makeClusterPSOCK <- function(workers, ...) {
+    # Return a cluster with a fixed number of workers (adjust as needed)
+    return(makeClusterPSOCK(4, ...))
+    }
 
     with_mocked_bindings(
         Sys.getenv = mock_sys_getenv_slurm,
         slurm_allocation = mock_slurm_allocation,
         system = mock_system,
+        parallelly::makeClusterPSOCK = mock_makeClusterPSOCK,
+
         code = {
             # Run in a SLURM environment
             init_multisession()
