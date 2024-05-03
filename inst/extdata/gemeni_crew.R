@@ -36,7 +36,7 @@ small <- crew.cluster::crew_controller_slurm(
     script_directory = here::here(glue::glue("{crew_cache_path}")),
     slurm_log_output = if (isTRUE(log_slurm)) here::here(glue::glue("{crew_cache_path}/slurm-%j.out")) else NULL,
     slurm_log_error  = if (isTRUE(log_slurm)) here::here(glue::glue("{crew_cache_path}/slurm-%j.err")) else NULL,
-    script_lines = glue::glue("#SBATCH --partition=defq \
+    script_lines = glue::glue("#SBATCH --partition=compute \
 #SBATCH --mem 20G \
 cd {here::here()} \
 /packages/easy-build/software/singularity/3.7.0/bin/singularity exec \\
