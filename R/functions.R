@@ -264,11 +264,11 @@ configure_targets_options <- function() {
   # Set targets options
   configure_targets_options()
   # Set parallelly options
-  if if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
+  if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
 }
 
 .onLoad <- function(libname, pkgname) {
   # Set parallelly options
-  if if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
+  if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
 }
 
