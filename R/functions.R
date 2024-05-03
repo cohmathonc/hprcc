@@ -114,6 +114,7 @@ create_controller <- function(name,
   r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER"))
   r_libs_site <- r_libs_site()
   slurm_script_dir <- getOption("hprcc.slurm_script_dir", tempdir())
+  slurm_account <- if (nzchar(account <- getOption("hprcc.slurm_account", ""))) glue::glue("#SBATCH --account {account}") else ""
   singularity_bin <- singularity_bin()
   singularity_bind_dirs <- singularity_bind_dirs()
   singularity_container <- singularity_container()
@@ -131,6 +132,7 @@ create_controller <- function(name,
   script_lines <- glue::glue("#SBATCH --mem {slurm_mem_gigabytes}G \
 #SBATCH --chdir {slurm_script_dir} \
 {gpu_req} \
+{slurm_account} \
 {singularity_bin} exec \\
 --env R_LIBS_USER={r_libs_user} \\
 --env R_LIBS_SITE={r_libs_site} \\
