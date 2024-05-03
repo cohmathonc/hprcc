@@ -21,7 +21,7 @@
 #' - \code{hprcc.singularity_bin}: Path to the Singularity binary. \cr Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"} \cr  Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}
 #' - \code{hprcc.singularity_container}: Path to the Singularity image. \cr Default set by \code{SINGULARITY_CONTAINER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif"}
 #' - \code{hprcc.bind_dirs}: Directories to bind in the Singularity container. \cr Default set by \code{SINGULARITY_BIND} \cr Apollo default: \code{"/labs,/opt,/ref_genome"} \cr Gemini default: \code{"/packages/singularity,/ref_genomes,/scratch"}
-#' - \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"fast,all"} \cr Gemini default: \code{"defq"}
+#' - \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"fast,all"} \cr Gemini default: \code{"compute"}
 #'
 #' @name package-options
 #' @aliases hprcc-package
@@ -218,7 +218,7 @@ default_partition <- function() {
   } else if (get_cluster() == "apollo") {
     return("fast,all")
   } else if (get_cluster() == "gemini") {
-    return("defq")
+    return("compute")
   } else {
     warning("Unknown cluster, please set hprcc.default_partition env var or option")
   }
@@ -243,8 +243,8 @@ configure_targets_options <- function() {
   # Conditionally add GPU controllers if on the 'gemini' cluster
   if (get_cluster() == "gemini") {
     gpu_controllers <- list(
-      create_controller("gpu_medium", slurm_cpus = 4, slurm_mem_gigabytes = 60, slurm_walltime_minutes = 120, slurm_partition = "gpu"),
-      create_controller("gpu_large", slurm_cpus = 8, slurm_mem_gigabytes = 120, slurm_walltime_minutes = 240, slurm_partition = "gpu")
+      create_controller("gpu_medium", slurm_cpus = 4, slurm_mem_gigabytes = 60, slurm_walltime_minutes = 120, slurm_partition = "gpu-a100,gpu-v100"),
+      create_controller("gpu_large", slurm_cpus = 8, slurm_mem_gigabytes = 120, slurm_walltime_minutes = 240, slurm_partition = "gpu-a100,gpu-v100")
     )
     controllers <- c(controllers, gpu_controllers)
   }
