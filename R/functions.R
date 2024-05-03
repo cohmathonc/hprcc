@@ -204,9 +204,9 @@ singularity_bind_dirs <- function() {
   } else if (nzchar(Sys.getenv("SINGULARITY_BIND"))) {
     return(Sys.getenv("SINGULARITY_BIND"))
   } else if (get_cluster() == "apollo") {
-    return(c("/labs,/opt,/ref_genome"))
+    return(c("/labs,/opt,/ref_genome,/run"))
   } else if (get_cluster() == "gemini") {
-    return(c("/packages,/ref_genomes,/scratch"))
+    return(c("/packages,/run,/ref_genomes,/scratch"))
   } else {
     warning("Unknown cluster, please set SINGULARITY_BIND env var or option")
   }
