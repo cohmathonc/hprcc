@@ -65,7 +65,7 @@ test_that("init_multisession sets up future plan based on resources", {
             Sys.getenv <- function(varname, ...) ""
             init_multisession()
             # Similar assertions for system resources
-            #TODO: Add assertions for system resources
+            # TODO: Add assertions for system resources
         }
     )
 })
