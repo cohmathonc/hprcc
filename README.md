@@ -19,7 +19,7 @@ You can easily configure your own SLURM resource requests (CPU, RAM, walltime) t
 | small       | 2    | 20          | 360            |
 | medium      | 4    | 40          | 360            |
 | large       | 8    | 80          | 360            |
-| large_mem   | 8    | 600         | 360            |
+| large_mem   | 8    | 800         | 360            |
 | xlarge      | 20   | 200         | 360            |
 | huge        | 40   | 200         | 120            |
 | gpu_medium^†^ | 4    | 60          | 120            |
