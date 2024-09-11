@@ -18,6 +18,6 @@ This function will throw an error if the hostname does not match any known clust
 }
 \examples{
 if (interactive()) {
-  get_cluster()
+    get_cluster()
 }
 }

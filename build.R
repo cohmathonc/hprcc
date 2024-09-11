@@ -20,7 +20,7 @@ usethis::use_tidy_description()
 # build the package
 tgz <- devtools::build(vignettes = FALSE)
 # Publish to cgt.coh.org
-drat::insertPackage(tgz, "/net/nfs-irwrsrchnas01/labs/rrockne/MHO")
+drat::insertPackage(tgz, "/labs/rrockne/MHO")
 
 # install locally
 # devtools::install()
@@ -40,5 +40,4 @@ pkgdown::build_site()
 usethis::use_github_release()
 
 # Publish to hprcc.coh.org
-rsync -avz --delete /labs/rrockne/MHO/hprcc-www/ domeally@cgt.coh.org:/home/domeally/omeally/h
-prcc/docs/user-guide/rbioc/hprcc
+system("rsync -avz --delete /labs/rrockne/MHO/hprcc-www/ domeally@cgt.coh.org:/home/domeally/omeally/hprcc/docs/user-guide/rbioc/hprcc")

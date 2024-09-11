@@ -19,12 +19,12 @@ runs the \href{http://hprcc.coh.org/user-guide/rbioc/}{RStudio for Bioconductor}
 \itemize{
 \item \code{hprcc.log_slurm}: Controls SLURM job logging. \cr Default: \code{FALSE}
 \item \code{hprcc.slurm_script_dir}: Path to write SLURM job scripts. \cr Default: \code{tempdir()}
-\item \code{hprcc.r_libs_user}: Path to user R libraries. \cr Default set by \code{R_LIBS_SITE} or \code{"~/R/bioc-3.17"}
-\item \code{hprcc.r_libs_site}: Site-specific library path. \cr Default set by \code{R_LIBS_USER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-3.17"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.17"}
+\item \code{hprcc.r_libs_user}: Path to user R libraries. \cr Default set by \code{R_LIBS_SITE} or \code{"~/R/bioc-3.18"}
+\item \code{hprcc.r_libs_site}: Site-specific library path. \cr Default set by \code{R_LIBS_USER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-3.18"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.18"}
 \item \code{hprcc.singularity_bin}: Path to the Singularity binary. \cr Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"} \cr  Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}
-\item \code{hprcc.singularity_container}: Path to the Singularity image. \cr Default set by \code{SINGULARITY_CONTAINER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_3.17.sif"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.17.sif"}
+\item \code{hprcc.singularity_container}: Path to the Singularity image. \cr Default set by \code{SINGULARITY_CONTAINER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_3.18.sif"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.18.sif"}
 \item \code{hprcc.bind_dirs}: Directories to bind in the Singularity container. \cr Default set by \code{SINGULARITY_BIND} \cr Apollo default: \code{"/labs,/opt,/ref_genome"} \cr Gemini default: \code{"/packages/singularity,/ref_genomes,/scratch"}
-\item \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"fast,all"} \cr Gemini default: \code{"defq"}
+\item \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"fast,all"} \cr Gemini default: \code{"compute"}
 }
 }
 

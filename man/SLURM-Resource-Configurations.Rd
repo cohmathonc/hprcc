@@ -25,7 +25,7 @@ The available configurations are:\tabular{llll}{
    small \tab 2 \tab 20 \tab 360 \cr
    medium \tab 4 \tab 40 \tab 360 \cr
    large \tab 8 \tab 80 \tab 360 \cr
-   large_mem \tab 8 \tab 600 \tab 360 \cr
+   large_mem \tab 8 \tab 800 \tab 360 \cr
    xlarge \tab 20 \tab 200 \tab 360 \cr
    huge \tab 40 \tab 200 \tab 120 \cr
    gpu_medium\eqn{^†}   \tab 4 \tab 60 \tab 120 \cr

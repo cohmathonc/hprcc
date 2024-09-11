@@ -54,7 +54,7 @@ resource paths and setups, simplifying job execution across the two platforms.
 }
 \examples{
 if (interactive()) {
-  create_controller("my_controller", slurm_cpus = 4, slurm_gigabytes = 8)
+    create_controller("my_controller", slurm_cpus = 4, slurm_gigabytes = 8)
 }
 }
 \seealso{
