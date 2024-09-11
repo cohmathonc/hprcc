@@ -1,6 +1,6 @@
-# 🔐 Passwordless SSH Setup 
+# 🔐 Passwordless SSH Setup
 
-This guide will help you set up passwordless SSH access from your local machine (Mac, Windows, or Linux) to Apollo (`ppxhpcacc01.coh.org`); same will work for Gemini (`gemini-login1.coh.org`).
+This guide will help you set up passwordless SSH access from your local machine (Mac, Windows, or Linux) to Apollo (`ppxhpcacc01.coh.org`); the same will work for Gemini (`gemini-login1.coh.org`) or any other ssh host.
 
 ## 🖥️ Local Machine Setup (Mac, Windows, Linux)
 
@@ -44,7 +44,7 @@ This guide will help you set up passwordless SSH access from your local machine 
    nano ~/.ssh/authorized_keys
    ```
 
-8. Paste your public key into this file, save, and exit (in nano, use Ctrl+X, then Y, then Enter).
+8. Paste your public key into this file, save, and exit (in `nano`, use `Ctrl+X`, then `Y`, then Enter).
 
 9. Set the correct permissions:
    ```bash
