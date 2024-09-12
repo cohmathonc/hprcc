@@ -1,5 +1,5 @@
 URL: http://hprcc.coh.org/rbioc/hprcc/
-destination: /net/nfs-irwrsrchnas01/labs/rrockne/MHO/hprcc-www
+destination: /labs/rrockne/MHO/hprcc-www
 package: hprcc
 template:
   bootstrap: 5
