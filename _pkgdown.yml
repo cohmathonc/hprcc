@@ -1,4 +1,4 @@
-url: http://hprcc.coh.org/rbioc/hprcc/
+url: http://cgt.coh.org/hprcc/
 destination: _site
 package: hprcc
 template:

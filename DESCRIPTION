@@ -7,7 +7,7 @@ Authors@R:
 Description: An R Package to simplify running analyses on City of Hope HPC
     clusters _Apollo_ and _Gemini_.
 License: MIT + file LICENSE
-URL: http://hprcc.coh.org/rbioc/hprcc/
+URL: http://cgt.coh.org/hprcc/
 BugReports: https://github.com/cohmathonc/hprcc/issues
 Imports: 
     crew,
