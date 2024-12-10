@@ -35,9 +35,7 @@ init_multisession <- function() {
         future::plan(multisession, workers = resources$CPUs)
         options(future.globals.maxSize = resources$Memory_GB * 1024^3)
     } else {
-        system_memory_gb <- as.numeric(system("grep MemTotal /proc/meminfo | awk '{print $2/1024/1024}'", intern = TRUE))
         future::plan(multisession)
-        options(future.globals.maxSize = system_memory_gb * 1024^3)
     }
 }
 
