@@ -6,17 +6,18 @@
 #'
 #' The available configurations are:
 #'
-#' | Job Type       | CPUs | Memory (GB) | Time (minutes) |
-#' |----------------|------|-------------|----------------|
-#' | tiny           | 2    | 8           | 60             |
-#' | small          | 2    | 20          | 360            |
-#' | medium         | 4    | 40          | 360            |
-#' | large          | 8    | 80          | 360            |
-#' | large_mem      | 8    | 800         | 360            |
-#' | xlarge         | 20   | 200         | 360            |
-#' | huge           | 40   | 200         | 120            |
-#' | gpu_medium\eqn{^†}  | 4    | 60          | 120            |
-#' | gpu_large\eqn{^†}  | 8    | 120         | 240            |
+#' | Job Type          | CPUs | Memory (GB)          | Time (minutes)    |
+#' |-------------------|------|---------------------|------------------|
+#' | tiny              | 2    | 8                   | 60               |
+#' | small             | 2    | 20                  | 360              |
+#' | medium            | 4    | 40                  | 360              |
+#' | large             | 8    | 80                  | 360              |
+#' | large_mem         | 8    | 800                 | 360              |
+#' | xlarge            | 20   | 200                 | 360              |
+#' | huge              | 40   | 200                 | 120              |
+#' | retry             | 2, 4, 8, 20, 40  | 8, 20, 40, 80, 120, 200 | 60, 360, 360, 720, 720 |
+#' | gpu_medium^†^     | 4    | 60                  | 120              |
+#' | gpu_large^†^      | 8    | 120                 | 240              |
 #' 
 #' \eqn{^†} GPUs only available on _Gemini_
 #' 
