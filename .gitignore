@@ -14,3 +14,6 @@ doc/*
 Meta/*
 _targets/meta/meta
 _targets/.gitignore
+
+.library
+.Renviron
