@@ -9,13 +9,15 @@ Description: An R Package to simplify running analyses on City of Hope HPC
 License: MIT + file LICENSE
 URL: http://cgt.coh.org/hprcc/
 BugReports: https://github.com/cohmathonc/hprcc/issues
-Imports: 
+Imports:
+    autometric,
     crew,
     crew.cluster,
     future,
     glue,
     here,
     ps,
+    qs2,
     stringr,
     targets
 Suggests: 
