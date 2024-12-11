@@ -64,7 +64,8 @@ get_cluster <- function() {
 #' @param slurm_walltime_minutes Maximum allowed execution time per task, in minutes. Defaults to 720 (12 hours).
 #' @param slurm_workers Total number of parallel tasks the controller can handle. Defaults to 350.
 #' @param slurm_partition SLURM partition for job submission. Default set by cluster. See [package options](../reference/package-options.html) for defaults.
-#' @param slurm_log_dir Path for storing SLURM logs when `option(hprcc.log_slurm = TRUE)`. Defaults to "logs" in the project directory.
+#' @param slurm_log_dir Relative path for saving SLURM & autometric logs when `option(hprcc.log_slurm = TRUE)`. Defaults to "logs" in the targets directory.
+#' @param slurm_script_dir Defaults to tempdir(), but can also be a relative path to save SLURM job files (for debugging.)
 #'
 #' @details
 #' `create_controller` streamlines SLURM job setup on COH clusters using
@@ -95,7 +96,9 @@ create_controller <- function(name,
                               slurm_walltime_minutes = 720L,
                               slurm_workers = 350L,
                               slurm_partition = default_partition(),
-                              slurm_log_dir = "logs") {
+                              slurm_log_dir = "logs",
+#                              slurm_script_dir = tempdir()) { #default
+                              slurm_script_dir = "job_scripts") { # debugging  
     # GPU check
     if (grepl("gpu", slurm_partition)) {
         if (get_cluster() != "gemini") {
@@ -110,15 +113,20 @@ create_controller <- function(name,
     }
 
     job_id <- Sys.getenv("SLURM_JOB_ID")
-    #nodename <- Sys.info()["nodename"]
+    
+    nodename <- Sys.info()["nodename"]
 
     r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER"))
 
     r_libs_site <- r_libs_site()
 
-    slurm_script_dir <- getOption("hprcc.slurm_script_dir", tempdir())
+    slurm_script_dir <- if (slurm_script_dir != tempdir()) {
+        here::here(glue::glue("{targets::tar_path_store()}/{slurm_script_dir}"))
+    } else {
+        tempdir()
+    }
 
-    slurm_log_dir <- here::here(slurm_log_dir)
+    slurm_log_dir <- here::here(glue::glue("{targets::tar_path_store()}/{slurm_log_dir}"))
 
     slurm_account <- if (nzchar(account <- getOption("hprcc.slurm_account", ""))) glue::glue("#SBATCH --account {account}") else ""
 
@@ -160,12 +168,13 @@ slurm_options <- crew.cluster::crew_options_slurm(
 
     crew.cluster::crew_controller_slurm(
         name = name,
-        #host = nodename,
+        host = nodename,
         workers = slurm_workers,
         seconds_idle = 30,
         garbage_collection = TRUE,
         options_metrics = crew::crew_options_metrics(path = "/dev/stdout", seconds_interval = 1),
-        options_cluster = slurm_options
+        options_cluster = slurm_options,
+        verbose = ifelse(isTRUE(log_slurm), TRUE, FALSE)
     )
 }
 
@@ -309,14 +318,22 @@ configure_targets_options <- function() {
 
 # -----------------------------------------------------------------------------
 .onAttach <- function(libname, pkgname) {
-  # Set targets options
-  configure_targets_options()
-  # Set parallelly options
-  if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
+    # Set targets options
+    configure_targets_options()
+    # Set parallelly options
+    if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
+    # set TMPDIR
+    if (!is.null(getOption("hprcc.tmpdir"))) { 
+        Sys.setenv(TMPDIR = getOption("hprcc.tmpdir"))
+        dir.create(getOption("hprcc.tmpdir"), recursive = TRUE, showWarnings = FALSE)
+        message("TMPDIR set to ", Sys.getenv("TMPDIR"))
+    } else {
+        message("TMPDIR set to ", Sys.getenv("TMPDIR"))
+    }
 }
 
 .onLoad <- function(libname, pkgname) {
-  # Set parallelly options
-  if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
+    # Set parallelly options
+      if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
 }
 
