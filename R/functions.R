@@ -108,18 +108,31 @@ create_controller <- function(name,
     } else {
         gpu_req <- ""
     }
+
     job_id <- Sys.getenv("SLURM_JOB_ID")
-    nodename <- Sys.info()["nodename"]
+    #nodename <- Sys.info()["nodename"]
+
     r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER"))
+
     r_libs_site <- r_libs_site()
+
     slurm_script_dir <- getOption("hprcc.slurm_script_dir", tempdir())
+
+    slurm_log_dir <- here::here(slurm_log_dir)
+
     slurm_account <- if (nzchar(account <- getOption("hprcc.slurm_account", ""))) glue::glue("#SBATCH --account {account}") else ""
+
     singularity_bin <- singularity_bin()
+
     singularity_bind_dirs <- singularity_bind_dirs()
+
     singularity_container <- singularity_container()
+
     log_slurm <- getOption("hprcc.log_slurm", FALSE)
+
     if (isTRUE(log_slurm)) dir.create(slurm_log_dir, showWarnings = FALSE, recursive = TRUE)
     log_output <- if (isTRUE(log_slurm)) glue::glue("{slurm_log_dir}/slurm-%j.out") else "/dev/null"
+
     if (slurm_script_dir != tempdir()) {
         dir.create(here::here(slurm_script_dir), showWarnings = FALSE, recursive = TRUE)
         slurm_script_dir <- here::here(slurm_script_dir)
@@ -134,26 +147,25 @@ create_controller <- function(name,
 -B {singularity_bind_dirs} \\
 {singularity_container} \\")
 
+slurm_options <- crew.cluster::crew_options_slurm(
+    script_directory = slurm_script_dir,
+    script_lines = script_lines,
+    cpus_per_task = slurm_cpus,
+    memory_gigabytes_required = slurm_mem_gigabytes,
+    time_minutes = slurm_walltime_minutes,
+    partition = slurm_partition,
+    log_output = log_output,
+    log_error = log_output
+)
+
     crew.cluster::crew_controller_slurm(
         name = name,
-        host = nodename,
+        #host = nodename,
         workers = slurm_workers,
         seconds_idle = 30,
         garbage_collection = TRUE,
-        options_metrics = if (log_slurm) {
-            crew_options_metrics(
-                path = slurm_log_dir,
-                seconds_interval = 1
-            ) } else {NULL},
-        options_cluster = crew.cluster::crew_options_slurm(
-            script_directory = slurm_script_dir,
-            script_lines = script_lines,
-            cpus_per_task = slurm_cpus,
-            memory_gigabytes_required = slurm_mem_gigabytes,
-            time_minutes = slurm_walltime_minutes,
-            partition = slurm_partition,
-            log_output = log_output
-            )
+        options_metrics = crew::crew_options_metrics(path = "/dev/stdout", seconds_interval = 1),
+        options_cluster = slurm_options
     )
 }
 
@@ -215,15 +227,45 @@ singularity_bind_dirs <- function() {
     }
 }
 
+
+slurm_default_partition <- function() {
+    # Make the system call and capture output
+    cmd_output <- system("scontrol show partition", intern = TRUE)
+
+    # Initialize variables
+    current_partition <- NULL
+
+    # Process each line
+    for (i in seq_along(cmd_output)) {
+        line <- cmd_output[i]
+
+        # If line starts with PartitionName, get the partition name
+        if (grepl("^PartitionName=", line)) {
+            current_partition <- sub("PartitionName=([^ ]+).*", "\\1", line)
+        }
+        # If we find Default=YES in a line and we have a current partition
+        else if (!is.null(current_partition) && grepl("Default=YES", line)) {
+            return(current_partition)
+        }
+    }
+
+    # Return NULL if no default partition found
+    return(NULL)
+}
+
 default_partition <- function() {
+    # Check if there's a user-specified default partition in options
     if (!is.null(getOption("hprcc.default_partition"))) {
         return(getOption("hprcc.default_partition"))
-    } else if (get_cluster() == "apollo") {
-        return("fast")
-    } else if (get_cluster() == "gemini") {
-        return("compute")
     } else {
-        warning("Unknown cluster, please set hprcc.default_partition env var or option")
+        # Get the system default partition
+        sys_default <- slurm_default_partition()
+        if (!is.null(sys_default)) {
+            return(sys_default)
+        } else {
+            warning("Could not determine default partition, please set hprcc.default_partition option")
+            return(NULL)
+        }
     }
 }
 
@@ -234,7 +276,7 @@ default_partition <- function() {
 configure_targets_options <- function() {
     # Define the common controllers
     controllers <- list(
-        create_controller(name = "tiny", slurm_cpus = 2, slurm_mem_gigabytes = 8, slurm_walltime_minutes = 60),
+        create_controller("tiny", slurm_cpus = 2, slurm_mem_gigabytes = 8, slurm_walltime_minutes = 60),
         create_controller("small", slurm_cpus = 2, slurm_mem_gigabytes = 20, slurm_walltime_minutes = 360),
         create_controller("medium", slurm_cpus = 4, slurm_mem_gigabytes = 40, slurm_walltime_minutes = 360),
         create_controller("large", slurm_cpus = 8, slurm_mem_gigabytes = 80, slurm_walltime_minutes = 360),

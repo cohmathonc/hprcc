@@ -1,31 +1,5 @@
 
 # ------------------------------------------------------------------------------
-# This function isn't that useful - it's a summary of the instantaneous memory
-# and CPU usage
-#' @importFrom ps ps_memory_info
-#' @importFrom ps ps_cpu_times
-get_usage_summary <- function() {
-    # Get memory info
-    mem_info <- ps_memory_info()
-    ram_usage_gb <- round(mem_info[1] / (1024^3), 2) # Convert from bytes to GB
-
-    # Get CPU times
-    cpu_times <- ps_cpu_times()
-    cpu_usage_user <- round(cpu_times[1], 2)
-    cpu_usage_system <- round(cpu_times[2], 2)
-
-    # Create summary string
-    summary_str <- paste(
-        Sys.time(),
-        "| Mem Usage:", ram_usage_gb, "GB |",
-        "CPU User Time:", cpu_usage_user, "seconds |",
-        "CPU System Time:", cpu_usage_system, "seconds"
-    )
-
-    return(summary_str)
-}
-
-# ------------------------------------------------------------------------------
 #' Print a message and optionally write it to a log file
 #'
 #' This function prints a message and optionally writes it to a log file.
@@ -84,6 +58,5 @@ log_params <- function(log = TRUE) {
     arg_list_str <- paste(names(arg_strs), arg_strs, sep = " = ", collapse = "; ")
     message_str <- glue("Arguments: {arg_list_str}")
 
-    # Assuming log_message is a function that handles logging
     if (log) log_message(message_str)
 }
