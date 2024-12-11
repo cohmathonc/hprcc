@@ -22,12 +22,20 @@ tar_script(
         dir.create(job_scripts_dir, showWarnings = FALSE, recursive = TRUE)
 
         # Configure SLURM script and options
-        script_lines <- glue::glue("/opt/singularity/3.7.0/bin/singularity exec \\
-    --env R_LIBS_USER=/home/domeally/workspaces/hprcc/.library \\
+        script_lines <-
+            # if cluster is apollo
+            if (hprcc::get_cluster() == "apollo") {
+                glue::glue("/opt/singularity/3.7.0/bin/singularity exec \\
     --env R_LIBS_SITE=/opt/singularity-images/rbioc/rlibs/bioc-3.19 \\
     -B /labs,/opt/singularity,/opt/singularity-images \\
     /opt/singularity-images/rbioc/vscode-rbioc_3.19.sif \\")
-
+            } else {
+                # if cluster is not apollo
+                glue::glue("/packages/easy-build/software/singularity/3.7.0/bin/singularity exec \\
+    --env R_LIBS_SITE=/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.19 \\
+    -B /packages,/run,/ref_genomes,/scratch \\
+    /packages/singularity/shared_cache/rbioc/vscode-rbioc_3.19.sif \\")
+            }
         # Configure the SLURM controller
         slurm_opts <- crew.cluster::crew_options_slurm(
             verbose = TRUE,
@@ -73,7 +81,7 @@ tar_script(
         list(
             tar_target(
                 name = data,
-                command = get_data(1000),
+                command = get_data(10000),
                 deployment = "worker"
             ),
 
@@ -107,9 +115,19 @@ unlink(temp_dir, recursive = TRUE)
 
 
 tar_script({
-    singularity_bin <- "/opt/singularity/3.7.0/bin/singularity"
-    base_dir <- "/opt/singularity-images/rbioc"
-    singularity_exec <- glue::glue("cd {here::here()} \
+# Base paths that change based on cluster
+singularity_bin <- if (hprcc::get_cluster() == "apollo") {
+    "/opt/singularity/3.7.0/bin/singularity"
+} else {
+    "/packages/easy-build/software/singularity/3.7.0/bin/singularity"
+}
+
+base_dir <- if (hprcc::get_cluster() == "apollo") {
+    "/opt/singularity-images/rbioc"
+} else {
+    "/packages/singularity/shared_cache/rbioc"
+}    
+singularity_exec <- glue::glue("cd {here::here()} \
 {singularity_bin} exec \\
 -B {base_dir} \\
 --env R_LIBS_SITE={base_dir}/rlibs/bioc-3.19 \\
@@ -125,3 +143,53 @@ tar_script({
         tar_target(z, y1 + y2)
     )}, ask = FALSE)
 tar_make()
+
+
+
+## Integration test for the hprcc package
+# Run this using git hook pre-push
+# your local .git/hooks/pre-push should look like
+
+# Rscript inst/extdata/integration_test.R
+
+# # Check the exit status of the R script
+# if [ $? -ne 0 ]; then
+# echo "Integration tests failed. Push aborted."
+# exit 1
+# fi
+
+# # If the script exits with 0, the push will proceed
+# exit 0
+
+library(targets)
+Sys.setenv(TAR_WARN = "TRUE")
+
+old_dir <- getwd()
+dir <- paste0(old_dir, "/targets_temp_dir")
+dir.create(dir, showWarnings = FALSE)
+setwd(dir)
+
+tar_config_set(store = paste0(dir, "/_targets"))
+
+tar_script(
+    {
+        # library(hprcc)
+        devtools::load_all()
+        configure_targets_options()
+
+        # options(hprcc.log_slurm = TRUE, hprcc.tmpdir = glue::glue("/scratch/{Sys.getenv('USER')}/tmp"))
+        message("log_slurm:", getOption("hprcc.log_slurm"))
+        message(.libPaths())
+        list(
+            tar_target(y1, 1 + 1, resources = small),
+            tar_target(y2, 1 + 1, resources = tiny),
+            tar_target(z, y1 + y2, resources = tiny)
+        )
+    },
+    ask = FALSE
+)
+
+tar_make()
+
+setwd(old_dir)
+unlink(dir, recursive = TRUE)
