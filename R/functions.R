@@ -5,18 +5,20 @@
 
 #' Package Options for hprcc
 #'
-#' The **hprcc** package has a number of configurable options, providing the flexibility to use it with any
-#' containerized environment supporting R and `{targets>=1.4.2}`.
+#' The **hprcc** package has a number of settings that can be configured
+#' via \code{\link[base]{options}} or environment variables, providing 
+#' the flexibility to use it with any containerized environment supporting
+#' R and `{targets>=1.9.1}`.
 #'
-#' Settings are read from \code{\link[base]{options}} in an `.Rprofile` file, located either in your
-#' `$HOME` directory or within the project directory. `.Rprofile` settings take precedence over
-#' environment variables, where indicated below. If no `options` are set, the default configuration
+#' Options can be set by calling \code{\link[base]{options}} _before_ loading the **hprcc** package in
+#' `_targets.R`. Option settings take precedence over environment variables, where 
+#' indicated below. If no `options` are set, the default configuration
 #' runs the [RStudio for Bioconductor](http://hprcc.coh.org/user-guide/rbioc/) container.
 #'
 #' @section Options:
-#' - \code{hprcc.slurm_log}: Enable SLURM job & autometric logging. \cr Default: \code{FALSE}
+#' - \code{hprcc.slurm_log}: Enable SLURM job & autometric logging. If `TRUE`, logs are saved in the `logs` folder within \code{tar_store_path()}. Logs capture the `stderr` and `stdout` of each SLURM job, and can be parsed by code\{autometric} package. \cr Default: \code{FALSE}.
 #' - \code{hprcc.slurm_verbose}: Show slurm messages in the console. \cr Default: \code{FALSE}
-#' - \code{hprcc.slurm_script_dir}: Path to write SLURM job scripts. \cr Default: \code{tempdir()}
+#' - \code{hprcc.slurm_script_dir}: A subfolder of \code{tar_store_path()} in which to stage SLURM job scripts. \cr Default: \code{tempdir()}
 #' - \code{hprcc.r_libs_user}: Path to user R libraries. \cr If not set, defaults to \code{R_LIBS_SITE} environment variable or none.
 #' - \code{hprcc.r_libs_site}: Site-specific library path. \cr Default set by \code{R_LIBS_USER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-VERSION"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-VERSION"}
 #' - \code{hprcc.singularity_bin}: Path to the Singularity binary. \cr Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"} \cr  Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}
@@ -339,4 +341,3 @@ configure_targets_options <- function() {
     # Set parallelly options
       if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
 }
-

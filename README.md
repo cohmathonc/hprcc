@@ -9,7 +9,7 @@ An R Package to simplify running analyses on City of Hope clusters _Apollo_ and 
 
 ## Features
 
-**hprcc** configures [targets](https://books.ropensci.org/targets/) pipelines for COH clusters _Apollo_ and _Gemini_. Targets provides a simple but powerful framework for running R code. It avoids unnecessary computation for tasks that are up to date, natively supports parallel computing and abstracts files as R objects. Also included are some handy functions for logging R jobs run via SLURM.
+**hprcc** configures [targets](https://books.ropensci.org/targets/) pipelines for COH clusters _Apollo_ and _Gemini_. Targets provides a simple but powerful framework for running R code. It avoids unnecessary computation for tasks that are up to date, natively supports parallel computing and abstracts files as R objects. The [`autometric`](https://wlandau.github.io/autometric/) package is used to gather resource usage metrics on the SLURM cluster.
 
 You can easily configure your own SLURM resource requests (CPU, RAM, walltime) to run multiprocess jobs on cluster nodes with `create_controller()` or use pre-configured shortcuts according to the job type:
 
@@ -27,6 +27,7 @@ You can easily configure your own SLURM resource requests (CPU, RAM, walltime) t
 | gpu_large^‡^      | 8    | 120                 | 240              |
 
 ^†^ The _retry_ controller will resubmit a job with increased resources if the job fails
+
 ^‡^ GPUs only available on _Gemini_
 
 For a complete list of configurable settings refer to the [package options](reference/package-options.html).
@@ -36,8 +37,10 @@ For a complete list of configurable settings refer to the [package options](refe
 Load the library via `_targets.R` and set resources within `tar_target()` steps. By default, all targets will run on the cluster with a `small` allocation.
 
 ```
-library(targets)    
+stopifnot(packageVersion("targets") >= "1.9.1")
+library(targets)
 tar_script({
+    options(hprcc.slurm_log=TRUE)
     library(hprcc)
     list(
         tar_target(y1, 1 + 1, deployment = "main"),
@@ -54,6 +57,12 @@ To install this package, you can use the `remotes` package in R:
 ```r
 if (!require("remotes")) install.packages("remotes")
 remotes::install_github("cohmathonc/hprcc")
+```
+
+Or the devlopment version:
+
+```r
+remotes::install_github("cohmathonc/hprcc", ref = "dev")
 ```
 
 ## Contributing
