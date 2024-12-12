@@ -18,8 +18,8 @@ tar_script(
         library(crew)
 
         # Create job scripts directory if it doesn't exist
-        job_scripts_dir <- here::here(getwd(), "job_scripts")
-        dir.create(job_scripts_dir, showWarnings = FALSE, recursive = TRUE)
+        slurm_script_dir <- here::here(getwd(), "job_scripts")
+        dir.create(slurm_script_dir, showWarnings = FALSE, recursive = TRUE)
 
         # Configure SLURM script and options
         script_lines <-
@@ -43,9 +43,9 @@ tar_script(
             cpus_per_task = 1,
             time_minutes = 5,
             script_lines = script_lines,
-            log_output = here::here(job_scripts_dir, "crew_log_%A.txt"),
-            log_error = here::here(job_scripts_dir, "crew_log_%A.txt"),
-            script_directory = job_scripts_dir
+            log_output = here::here(slurm_script_dir, "crew_log_%A.txt"),
+            log_error = here::here(slurm_script_dir, "crew_log_%A.txt"),
+            script_directory = slurm_script_dir
         )
 
         slurm_controller <- crew.cluster::crew_controller_slurm(
@@ -173,15 +173,14 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
-        # library(hprcc)
-        devtools::load_all()
-        configure_targets_options()
-
-        # options(hprcc.log_slurm = TRUE, hprcc.tmpdir = glue::glue("/scratch/{Sys.getenv('USER')}/tmp"))
-        message("log_slurm:", getOption("hprcc.log_slurm"))
-        message(.libPaths())
+        options(hprcc.slurm_log = TRUE)
+         tar_source("../R")
+         configure_targets_options()
+        # devtools::load_all()
+        message("_targets.R_log_slurm:", getOption("hprcc.slurm_log"))
+    
         list(
-            tar_target(y1, 1 + 1, resources = small),
+            tar_target(y1, {Sys.sleep(2);1 + 1}, resources = small),
             tar_target(y2, 1 + 1, resources = tiny),
             tar_target(z, y1 + y2, resources = tiny)
         )
