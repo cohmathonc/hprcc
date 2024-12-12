@@ -147,7 +147,7 @@ create_controller <- function(name,
     singularity_container <- singularity_container()
 
     use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
-    slurm_jobs_dir <- if (use_jobs_dir) here::here(glue::glue("{targets::tar_path_store()}/jobs")) else NULL
+    slurm_jobs_dir <- if (use_jobs_dir) here::here(glue::glue("{targets::tar_path_store()}/jobs")) else tempdir()
     if (use_jobs_dir) dir.create(slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
 
     use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
