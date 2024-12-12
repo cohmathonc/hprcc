@@ -14,14 +14,15 @@
 #' runs the [RStudio for Bioconductor](http://hprcc.coh.org/user-guide/rbioc/) container.
 #'
 #' @section Options:
-#' - \code{hprcc.log_slurm}: Controls SLURM job logging. \cr Default: \code{FALSE}
+#' - \code{hprcc.slurm_log}: Enable SLURM job & autometric logging. \cr Default: \code{FALSE}
+#' - \code{hprcc.slurm_verbose}: Show slurm messages in the console. \cr Default: \code{FALSE}
 #' - \code{hprcc.slurm_script_dir}: Path to write SLURM job scripts. \cr Default: \code{tempdir()}
-#' - \code{hprcc.r_libs_user}: Path to user R libraries. \cr Default set by \code{R_LIBS_SITE} or \code{"~/R/bioc-3.18"}
-#' - \code{hprcc.r_libs_site}: Site-specific library path. \cr Default set by \code{R_LIBS_USER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-3.18"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.18"}
+#' - \code{hprcc.r_libs_user}: Path to user R libraries. \cr If not set, defaults to \code{R_LIBS_SITE} environment variable or none.
+#' - \code{hprcc.r_libs_site}: Site-specific library path. \cr Default set by \code{R_LIBS_USER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-VERSION"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-VERSION"}
 #' - \code{hprcc.singularity_bin}: Path to the Singularity binary. \cr Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"} \cr  Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}
-#' - \code{hprcc.singularity_container}: Path to the Singularity image. \cr Default set by \code{SINGULARITY_CONTAINER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_3.18.sif"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.18.sif"}
+#' - \code{hprcc.singularity_container}: Path to the Singularity image. \cr Default set by \code{SINGULARITY_CONTAINER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_VERSION.sif"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_VERSION.sif"}
 #' - \code{hprcc.bind_dirs}: Directories to bind in the Singularity container. \cr Default set by \code{SINGULARITY_BIND} \cr Apollo default: \code{"/labs,/opt,/ref_genome"} \cr Gemini default: \code{"/packages/singularity,/ref_genomes,/scratch"}
-#' - \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"fast,all"} \cr Gemini default: \code{"compute"}
+#' - \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"all"} \cr Gemini default: \code{"compute"}
 #'
 #' @name package-options
 #' @aliases hprcc-package
@@ -97,8 +98,8 @@ create_controller <- function(name,
                               slurm_workers = 350L,
                               slurm_partition = default_partition(),
                               slurm_log_dir = "logs",
-#                              slurm_script_dir = tempdir()) { #default
-                              slurm_script_dir = "job_scripts") { # debugging  
+                              slurm_script_dir = tempdir()) { #default
+#                              slurm_script_dir = "job_scripts") { # debugging  
     # GPU check
     if (grepl("gpu", slurm_partition)) {
         if (get_cluster() != "gemini") {
@@ -116,7 +117,7 @@ create_controller <- function(name,
     
     nodename <- Sys.info()["nodename"]
 
-    r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER"))
+    r_libs_user <- if (nzchar(r_libs_user <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER")))) glue::glue("--env R_LIBS_USER={r_libs_user} \\") else ""
 
     r_libs_site <- r_libs_site()
 
@@ -136,7 +137,9 @@ create_controller <- function(name,
 
     singularity_container <- singularity_container()
 
-    log_slurm <- getOption("hprcc.log_slurm", FALSE)
+    log_slurm <- getOption("hprcc.slurm_log", FALSE)
+
+    verbose_slurm <- getOption("hprcc.slurm_verbose", FALSE)
 
     if (isTRUE(log_slurm)) dir.create(slurm_log_dir, showWarnings = FALSE, recursive = TRUE)
     log_output <- if (isTRUE(log_slurm)) glue::glue("{slurm_log_dir}/slurm-%j.out") else "/dev/null"
@@ -150,7 +153,7 @@ create_controller <- function(name,
 {gpu_req} \
 {slurm_account} \
 {singularity_bin} exec \\
---env R_LIBS_USER={r_libs_user} \\
+{r_libs_user} \\
 --env R_LIBS_SITE={r_libs_site} \\
 -B {singularity_bind_dirs} \\
 {singularity_container} \\")
@@ -163,7 +166,8 @@ slurm_options <- crew.cluster::crew_options_slurm(
     time_minutes = slurm_walltime_minutes,
     partition = slurm_partition,
     log_output = log_output,
-    log_error = log_output
+    log_error = log_output,
+    verbose = ifelse(isTRUE(verbose_slurm), TRUE, FALSE)
 )
 
     crew.cluster::crew_controller_slurm(
@@ -172,9 +176,8 @@ slurm_options <- crew.cluster::crew_options_slurm(
         workers = slurm_workers,
         seconds_idle = 30,
         garbage_collection = TRUE,
-        options_metrics = crew::crew_options_metrics(path = "/dev/stdout", seconds_interval = 1),
         options_cluster = slurm_options,
-        verbose = ifelse(isTRUE(log_slurm), TRUE, FALSE)
+        options_metrics = crew::crew_options_metrics(path = "/dev/stdout", seconds_interval = 1)
     )
 }
 
@@ -289,7 +292,7 @@ configure_targets_options <- function() {
         create_controller("small", slurm_cpus = 2, slurm_mem_gigabytes = 20, slurm_walltime_minutes = 360),
         create_controller("medium", slurm_cpus = 4, slurm_mem_gigabytes = 40, slurm_walltime_minutes = 360),
         create_controller("large", slurm_cpus = 8, slurm_mem_gigabytes = 80, slurm_walltime_minutes = 360),
-        create_controller("large_mem", slurm_cpus = 8, slurm_mem_gigabytes = 800, slurm_walltime_minutes = 360, slurm_partition = ifelse(hprcc::get_cluster() == "apollo", "all", "bigmem")),
+        create_controller("large_mem", slurm_cpus = 8, slurm_mem_gigabytes = 800, slurm_walltime_minutes = 360, slurm_partition = ifelse(get_cluster() == "apollo", "all", "bigmem")),
         create_controller("xlarge", slurm_cpus = 20, slurm_mem_gigabytes = 200),
         create_controller("huge", slurm_cpus = 40, slurm_mem_gigabytes = 200, slurm_walltime_minutes = 120),
         create_controller("retry", slurm_cpus = c(2, 4, 8, 20, 40), slurm_mem_gigabytes = c(8,20,40,80,120,200), slurm_walltime_minutes = c(60,360,360,720,720))
