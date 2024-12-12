@@ -6,8 +6,11 @@
 \usage{
 init_multisession()
 }
+\value{
+Invisibly returns the result of \code{future::plan()}.
+}
 \description{
-Configures the \{future\} package for multisession computation, adapting resource
+Configures the {future} package for multisession computation, adapting resource
 settings based on the SLURM job's allocation or system resources.
 }
 \details{
@@ -19,4 +22,8 @@ and standard multisession settings.
 if (interactive()) {
     init_multisession()
 }
+
+}
+\seealso{
+\code{\link[future]{plan}}, \code{\link[future]{multisession}}
 }

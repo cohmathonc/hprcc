@@ -5,26 +5,45 @@
 \alias{hprcc-package}
 \title{Package Options for hprcc}
 \description{
-The \strong{hprcc} package has a number of configurable options, providing the flexibility to use it with any
-containerized environment supporting R and \verb{\{targets>=1.4.2\}}.
+The \strong{hprcc} package has a number of settings that can be configured
+via \code{\link[base]{options}} or environment variables, providing
+the flexibility to use it with any containerized environment supporting
+R and \verb{\{targets>=1.9.1\}}.
 }
 \details{
-Settings are read from \code{\link[base]{options}} in an \code{.Rprofile} file, located either in your
-\verb{$HOME} directory or within the project directory. \code{.Rprofile} settings take precedence over
-environment variables, where indicated below. If no \code{options} are set, the default configuration
+Options can be set by calling \code{\link[base]{options}} \emph{before} loading the \strong{hprcc} package in
+\verb{_targets.R}. Option settings take precedence over environment variables, where
+indicated below. If no \code{options} are set, the default configuration
 runs the \href{http://hprcc.coh.org/user-guide/rbioc/}{RStudio for Bioconductor} container.
 }
 \section{Options}{
 
-\itemize{
-\item \code{hprcc.log_slurm}: Controls SLURM job logging. \cr Default: \code{FALSE}
-\item \code{hprcc.slurm_script_dir}: Path to write SLURM job scripts. \cr Default: \code{tempdir()}
-\item \code{hprcc.r_libs_user}: Path to user R libraries. \cr Default set by \code{R_LIBS_SITE} or \code{"~/R/bioc-3.18"}
-\item \code{hprcc.r_libs_site}: Site-specific library path. \cr Default set by \code{R_LIBS_USER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-3.18"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-3.18"}
-\item \code{hprcc.singularity_bin}: Path to the Singularity binary. \cr Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"} \cr  Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}
-\item \code{hprcc.singularity_container}: Path to the Singularity image. \cr Default set by \code{SINGULARITY_CONTAINER} \cr Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_3.18.sif"} \cr Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_3.18.sif"}
-\item \code{hprcc.bind_dirs}: Directories to bind in the Singularity container. \cr Default set by \code{SINGULARITY_BIND} \cr Apollo default: \code{"/labs,/opt,/ref_genome"} \cr Gemini default: \code{"/packages/singularity,/ref_genomes,/scratch"}
-\item \code{hprcc.default_partition}: Default SLURM partition. \cr Apollo default: \code{"fast,all"} \cr Gemini default: \code{"compute"}
+\describe{
+\item{hprcc.slurm_logs}{logical. Enable SLURM job & autometric logging. If \code{TRUE}, logs are saved to
+\code{tar_store_path()/logs}. Logs capture the \code{stderr} and \code{stdout} of each SLURM job, and can be parsed by
+\code{autometric} package. Default: \code{FALSE}.}
+\item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. Default: \code{FALSE}}
+\item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_store_path()/jobs}; use the
+\code{targets} default of \verb{$TMPDIR} if \code{FALSE}. Default: \code{TRUE}}
+\item{hprcc.r_libs_user}{Path to user R libraries. If not set, defaults to \code{R_LIBS_SITE} environment
+variable or the R default of "~/R/x86_64-pc-linux-gnu-library/\%V".}
+\item{hprcc.r_libs_site}{Site-specific library path. Default set by \code{R_LIBS_USER}.
+Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-VERSION"}.
+Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-VERSION"}}
+\item{hprcc.singularity_bin}{Path to the Singularity binary.
+Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"}.
+Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}}
+\item{hprcc.singularity_container}{Path to the Singularity image.
+Default set by \code{SINGULARITY_CONTAINER}.
+Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_VERSION.sif"}.
+Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_VERSION.sif"}}
+\item{hprcc.bind_dirs}{Directories to bind in the Singularity container.
+Default set by \code{SINGULARITY_BIND}.
+Apollo default: \code{"/labs,/opt,/ref_genome"}.
+Gemini default: \code{"/packages/singularity,/ref_genomes,/scratch"}}
+\item{hprcc.default_partition}{Default SLURM partition.
+Apollo default: \code{"all"}.
+Gemini default: \code{"compute"}}
 }
 }
 

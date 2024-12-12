@@ -22,7 +22,7 @@
 #'         \code{autometric} package. Default: \code{FALSE}.}
 #'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. Default: \code{FALSE}}
 #'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_store_path()/jobs}; use the
-#'         `targets` default of `$TMPDIR` if `FALSE`. Default: `TRUE`}
+#'         `targets` default of `$TMPDIR` if `FALSE`. Default: `FALSE`}
 #'   \item{hprcc.r_libs_user}{Path to user R libraries. If not set, defaults to \code{R_LIBS_SITE} environment
 #'         variable or the R default of "~/R/x86_64-pc-linux-gnu-library/%V".}
 #'   \item{hprcc.r_libs_site}{Site-specific library path. Default set by \code{R_LIBS_USER}.
@@ -146,7 +146,7 @@ create_controller <- function(name,
 
     singularity_container <- singularity_container()
 
-    use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", TRUE))
+    use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
     slurm_jobs_dir <- if (use_jobs_dir) here::here(glue::glue("{targets::tar_path_store()}/jobs")) else NULL
     if (use_jobs_dir) dir.create(slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
 

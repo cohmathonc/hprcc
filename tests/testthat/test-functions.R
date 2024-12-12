@@ -59,7 +59,7 @@ test_that("init_multisession sets up future plan based on resources", {
             # Run in a SLURM environment
             init_multisession()
             expect_true(inherits(future::plan(), "multisession"))
-            expect_equal(getOption("future.globals.maxSize"), 8 * 1024^3)
+            expect_equal(getOption("future.globals.maxSize"), 8 * 1024^3/4)
 
             # Run outside of a SLURM environment
             Sys.getenv <- function(varname, ...) ""

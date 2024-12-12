@@ -10,8 +10,7 @@ create_controller(
   slurm_mem_gigabytes,
   slurm_walltime_minutes = 720L,
   slurm_workers = 350L,
-  slurm_partition = default_partition(),
-  slurm_log_dir = "logs"
+  slurm_partition = default_partition()
 )
 }
 \arguments{
@@ -25,9 +24,8 @@ create_controller(
 
 \item{slurm_workers}{Total number of parallel tasks the controller can handle. Defaults to 350.}
 
-\item{slurm_partition}{SLURM partition for job submission. Default set by cluster. See \href{../reference/package-options.html}{package options} for defaults.}
-
-\item{slurm_log_dir}{Path for storing SLURM logs when \code{option(hprcc.log_slurm = TRUE)}. Defaults to "logs" in the project directory.}
+\item{slurm_partition}{SLURM partition for job submission. Default set by cluster.
+See \href{../reference/package-options.html}{package options} for defaults.}
 }
 \value{
 A \code{crew_controller} object, ready to manage SLURM job submissions and monitoring.

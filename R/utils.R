@@ -11,7 +11,7 @@ message <- NULL
 # ------------------------------------------------------------------------------
 #' Initialize Multisession Computation with Future
 #'
-#' Configures the \{future\} package for multisession computation, adapting resource
+#' Configures the {future} package for multisession computation, adapting resource
 #' settings based on the SLURM job's allocation or system resources.
 #'
 #' @details
@@ -19,24 +19,57 @@ message <- NULL
 #' based on the job's resources. Outside SLURM, it defaults to system memory
 #' and standard multisession settings.
 #'
+#' @return
+#' Invisibly returns the result of \code{future::plan()}.
+#'
 #' @examples
 #' if (interactive()) {
 #'     init_multisession()
 #' }
+#'
+#' @seealso
+#' \code{\link[future]{plan}}, \code{\link[future]{multisession}}
+#'
 #' @export
 #' @importFrom future plan multisession
 init_multisession <- function() {
-    slurm_job_id <- Sys.getenv("SLURM_JOB_ID")
-    if (!is.na(as.numeric(slurm_job_id)) && slurm_job_id != "") {
-        resources <- slurm_allocation()
-        if (is.null(resources)) {
-            stop("Unable to allocate SLURM resources.")
-        }
-        future::plan(multisession, workers = resources$CPUs)
-        options(future.globals.maxSize = resources$Memory_GB * 1024^3)
+    # Check for SLURM environment
+    slurm_job_id <- Sys.getenv("SLURM_JOB_ID", "")
+
+    # If we're in a valid SLURM job
+    if (nzchar(slurm_job_id) && !is.na(as.numeric(slurm_job_id))) {
+        tryCatch(
+            {
+                resources <- slurm_allocation()
+                if (is.null(resources)) {
+                    warning("Could not determine SLURM resources, using default multisession settings")
+                    return(future::plan(multisession))
+                }
+
+                # Set plan with SLURM-specific resources
+                future::plan(
+                    multisession,
+                    workers = resources$CPUs
+                )
+
+                # Set memory limit per worker
+                worker_memory <- resources$Memory_GB * 1024^3 / resources$CPUs
+                options(future.globals.maxSize = worker_memory)
+            },
+            error = function(e) {
+                warning(
+                    "Error setting SLURM-specific resources: ", e$message,
+                    "\nFalling back to default multisession settings"
+                )
+                future::plan(multisession)
+            }
+        )
     } else {
+        # Not in SLURM, use default settings
         future::plan(multisession)
     }
+
+    invisible(future::plan())
 }
 
 #' Retrieve SLURM Job Allocation

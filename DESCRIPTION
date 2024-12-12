@@ -12,7 +12,7 @@ BugReports: https://github.com/cohmathonc/hprcc/issues
 Imports:
     autometric,
     crew,
-    crew.cluster (>=0.3.3),
+    crew.cluster (>= 0.3.3),
     future,
     glue,
     here,

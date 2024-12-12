@@ -41,8 +41,7 @@ reference:
   - title: "Logging and Parameters"
     desc: "Functions for logging and parameter management."
     contents:
-      - log_message
-      - log_params
+      - log_hprcc_settings
 
   - title: "Package Options"
     desc: "Customize package behavior via options."
