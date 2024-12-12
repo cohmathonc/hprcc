@@ -1,5 +1,4 @@
 library(targets)
-Sys.setenv(TAR_WARN = "true")
 
 # Set up temporary directory
 old_dir <- getwd()
@@ -162,7 +161,6 @@ tar_make()
 # exit 0
 
 library(targets)
-Sys.setenv(TAR_WARN = "TRUE")
 
 old_dir <- getwd()
 dir <- paste0(old_dir, "/targets_temp_dir")
@@ -173,11 +171,13 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
-        options(hprcc.slurm_log = TRUE)
-         tar_source("../R")
-         configure_targets_options()
+        options(hprcc.slurm_logs = TRUE, hprcc.slurm_verbose = TRUE)
+        tar_source("../R")
+        configure_targets_options()
+        Sys.setenv("R_LIBS_USER"="")
+        log_hprcc_settings()
+
         # devtools::load_all()
-        message("_targets.R_log_slurm:", getOption("hprcc.slurm_log"))
     
         list(
             tar_target(y1, {Sys.sleep(2);1 + 1}, resources = small),
