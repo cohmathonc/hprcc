@@ -25,7 +25,7 @@
 #' }
 #'
 #' @seealso
-#' \code{\link{targets::tar_path_store}} for understanding the log file location
+#' [targets::tar_path_store()] for understanding the log file location
 #'
 #' @export
 log_hprcc_settings <- function() {
