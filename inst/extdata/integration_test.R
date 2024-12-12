@@ -25,12 +25,18 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
-        #library(hprcc)
-        devtools::load_all()
+        tar_source("../R")
+        controller <- create_controller("tiny", slurm_cpus = 2, slurm_mem_gigabytes = 8, slurm_walltime_minutes = 60)
+        targets::tar_option_set(
+            format = "qs",
+            storage = "worker",
+            retrieval = "worker",
+            controller = crew::crew_controller_group(controller)
+        )
         list(
             tar_target(y1, 1 + 1, deployment = "main"),
             tar_target(y2, 1 + 1, resources = tiny),
-            tar_target(z, y1 + y2, resources = small)
+            tar_target(z, y1 + y2, resources = tiny)
         )
     },
     ask = FALSE
