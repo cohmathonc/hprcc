@@ -12,14 +12,14 @@ BugReports: https://github.com/cohmathonc/hprcc/issues
 Imports:
     autometric,
     crew,
-    crew.cluster,
+    crew.cluster (>=0.3.3),
     future,
     glue,
     here,
     ps,
     qs2,
     stringr,
-    targets
+    targets (>= 1.9.1)
 Suggests: 
     knitr,
     rmarkdown,
