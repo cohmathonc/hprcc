@@ -129,8 +129,6 @@ create_controller <- function(name,
         gpu_req <- ""
     }
 
-    nodename <- Sys.info()["nodename"]
-
     r_libs_user <- if (nzchar(user_libs_path <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER")))) {
         glue::glue("--env R_LIBS_USER={user_libs_path}")
     } else {
@@ -183,7 +181,6 @@ create_controller <- function(name,
 
     crew.cluster::crew_controller_slurm(
         name = name,
-        host = nodename,
         workers = slurm_workers,
         seconds_idle = 30L,
         garbage_collection = TRUE,
@@ -279,20 +276,22 @@ default_partition <- function() {
     # Check for partition in options
     if (!is.null(getOption("hprcc.default_partition"))) {
         return(getOption("hprcc.default_partition"))
-    } else {
-        # Get the system default partition
-        sys_default <- slurm_default_partition()
-        if (!is.null(sys_default)) {
-            return(sys_default)
-        } else {
-            warning("Could not determine default partition, please set hprcc.default_partition option")
-            return(NULL)
-        }
     }
+
+    # Get the system default partition
+    sys_default <- slurm_default_partition()
+    if (!is.null(sys_default)) {
+        return(sys_default)
+    }
+
+    warning("Could not determine default partition, please set hprcc.default_partition option")
+    return(NULL)
 }
 
+
 # Default Targets options ----------------------------------------------------
-#' @import autometric qs2
+#' @import autometric
+#' @import qs2
 configure_targets_options <- function() {
     # Define the common controllers
     controllers <- list(
@@ -336,12 +335,16 @@ configure_targets_options <- function() {
 
 # -----------------------------------------------------------------------------
 .onAttach <- function(libname, pkgname) {
-    # Set targets options
-    configure_targets_options()
-    # Set parallelly options
-    if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
-    # log hprcc settings to logs/hprcc_settings.txt if option(hprcc.slurm_logs = TRUE)
-    log_hprcc_settings()
+    if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
+        # Configure everything for SLURM environment
+        configure_targets_options()
+        options(parallelly.availableCores.methods = "Slurm")
+        if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
+            log_hprcc_settings()
+        }
+    } else {
+        packageStartupMessage("Note: This package is designed for use on the City of Hope High Performance Research Computing Cluster (HPRCC). Some functionality may be limited on other systems.")
+    }
 }
 
 .onLoad <- function(libname, pkgname) {
