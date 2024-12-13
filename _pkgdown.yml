@@ -14,8 +14,9 @@ navbar:
       href: http://hprcc.coh.org/user-guide/rbioc/
       aria-label: hprcc
       text: Home
+deploy:
+  install_metadata: true
 reference:
-
   - title: "Preconfigured SLURM Resources"
     desc: "Preconfigured resources for SLURM job execution."
     contents:
