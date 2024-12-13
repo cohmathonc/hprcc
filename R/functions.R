@@ -17,11 +17,11 @@
 #'
 #' @section Options:
 #' \describe{
-#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & autometric logging. If `TRUE`, logs are saved to
-#'         \code{tar_store_path()/logs}. Logs capture the `stderr` and `stdout` of each SLURM job, and can be parsed by
-#'         \code{autometric} package. Default: \code{FALSE}.}
+#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & `autometric` logging. If `TRUE`, logs are saved to
+#'         \code{targets::tar_store_path()/logs}. Logs capture the `stderr` and `stdout` of each SLURM job, 
+#'         and can be parsed by autometric::log_read(). Default: \code{FALSE}.}
 #'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. Default: \code{FALSE}}
-#'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_store_path()/jobs}; use the
+#'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{targets::tar_store_path()/jobs}; use the
 #'         `targets` default of `$TMPDIR` if `FALSE`. Default: `FALSE`}
 #'   \item{hprcc.r_libs_user}{Path to user R libraries. If not set, defaults to \code{R_LIBS_SITE} environment
 #'         variable or the R default of "~/R/x86_64-pc-linux-gnu-library/%V".}
