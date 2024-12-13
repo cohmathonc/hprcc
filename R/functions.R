@@ -17,33 +17,42 @@
 #'
 #' @section Options:
 #' \describe{
-#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & `autometric` logging. If `TRUE`, logs are saved to
-#'         \code{targets::tar_store_path()/logs}. Logs capture the `stderr` and `stdout` of each SLURM job, 
-#'         and can be parsed by autometric::log_read(). Default: \code{FALSE}.}
-#'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. Default: \code{FALSE}}
+#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & \code{\link[base]{autometric}} logging. If
+#'         `TRUE`, logs are saved to \code{targets::tar_store_path()/logs}. Logs capture the `stderr`
+#'         and `stdout` of each SLURM job, and can be parsed by autometric::log_read(). \cr
+#'         Default: \code{FALSE}.}
+#'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. \cr
+#'         Default: \code{FALSE}}
 #'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{targets::tar_store_path()/jobs}; use the
-#'         `targets` default of `$TMPDIR` if `FALSE`. Default: `FALSE`}
-#'   \item{hprcc.r_libs_user}{Path to user R libraries. If not set, defaults to \code{R_LIBS_SITE} environment
-#'         variable or the R default of "~/R/x86_64-pc-linux-gnu-library/%V".}
-#'   \item{hprcc.r_libs_site}{Site-specific library path. Default set by \code{R_LIBS_USER}.
-#'         Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-VERSION"}.
-#'         Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-VERSION"}}
-#'   \item{hprcc.singularity_bin}{Path to the Singularity binary.
-#'         Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"}.
+#'         `targets` default of `$TMPDIR` if `FALSE`. \cr
+#'         Default: `FALSE`}
+#'   \item{hprcc.slurm_account}{character. SLURM account for job submission. \cr
+#'         Default: \code{$USER}}
+#'   \item{hprcc.r_libs_user}{Path to user R libraries. \cr
+#'         Environment: \code{$R_LIBS_USER} \cr
+#'         Default: User's R library path or `~/R/x86_64-pc-linux-gnu-library/%V`}
+#'   \item{hprcc.r_libs_site}{Site-specific library path. \cr
+#'         Environment: \code{$R_LIBS_SITE} \cr
+#'         Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-$BIOCONDUCTOR_VERSION"} \cr
+#'         Gemini default: \code{"/packages/singularity/shared_cache/rbioc/rlibs/bioc-$BIOCONDUCTOR_VERSION"}}
+#'   \item{hprcc.singularity_bin}{Path to the Singularity binary. \cr
+#'         Environment: \code{$SINGULARITY_BIN} \cr
+#'         Apollo default: \code{"/opt/singularity/3.7.0/bin/singularity"} \cr
 #'         Gemini default: \code{"/packages/easy-build/software/singularity/3.7.0/bin/singularity"}}
-#'   \item{hprcc.singularity_container}{Path to the Singularity image.
-#'         Default set by \code{SINGULARITY_CONTAINER}.
-#'         Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_VERSION.sif"}.
-#'         Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_VERSION.sif"}}
-#'   \item{hprcc.bind_dirs}{Directories to bind in the Singularity container.
-#'         Default set by \code{SINGULARITY_BIND}.
-#'         Apollo default: \code{"/labs,/opt,/ref_genome"}.
-#'         Gemini default: \code{"/packages/singularity,/ref_genomes,/scratch"}}
-#'   \item{hprcc.default_partition}{Default SLURM partition.
-#'         Apollo default: \code{"all"}.
-#'         Gemini default: \code{"compute"}}
+#'   \item{hprcc.singularity_container}{Path to the Singularity image. \cr
+#'         Environment: \code{$SINGULARITY_CONTAINER} \cr
+#'         Apollo default: \code{"/opt/singularity-images/rbioc/vscode-rbioc_$BIOCONDUCTOR_VERSION.sif"} \cr
+#'         Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_$BIOCONDUCTOR_VERSION.sif"}}
+#'   \item{hprcc.bind_dirs}{Directories to bind in the Singularity container. \cr
+#'         Environment: \code{$SINGULARITY_BIND} \cr
+#'         Apollo default: \code{"/labs,/opt,/ref_genome,/run"} \cr
+#'         Gemini default: \code{"/packages,/run,/ref_genomes,/scratch"}}
+#'   \item{hprcc.default_partition}{Default SLURM partition. Automatically detected using `scontrol show partition`. \cr
+#'         Default: Dynamically retrieved default partition from SLURM configuration.}
 #' }
 #'
+#' @keywords package
+#' @seealso \code{\link{create_controller}} for creating SLURM job controllers
 #' @name package-options
 #' @aliases hprcc-package
 NULL
