@@ -251,20 +251,28 @@ singularity_bind_dirs <- function() {
 }
 
 slurm_default_partition <- function() {
-    cmd_output <- system("scontrol show partition", intern = TRUE)
-    current_partition <- NULL
-    # Process each line 
-    for (i in seq_along(cmd_output)) {
-        line <- cmd_output[i]
-        # If line starts with PartitionName, get the partition name
-        if (grepl("^PartitionName=", line)) {
-            current_partition <- sub("PartitionName=([^ ]+).*", "\\1", line)
-        } else if (!is.null(current_partition) && grepl("Default=YES", line)) {
-            return(current_partition)
+    # Try to run scontrol command, return NULL if it fails
+    tryCatch(
+        {
+            cmd_output <- system("scontrol show partition", intern = TRUE)
+            current_partition <- NULL
+            # Process each line
+            for (i in seq_along(cmd_output)) {
+                line <- cmd_output[i]
+                # If line starts with PartitionName, get the partition name
+                if (grepl("^PartitionName=", line)) {
+                    current_partition <- sub("PartitionName=([^ ]+).*", "\\1", line)
+                } else if (!is.null(current_partition) && grepl("Default=YES", line)) {
+                    return(current_partition)
+                }
+            }
+            # Return NULL if no default partition found
+            return(NULL)
+        },
+        error = function(e) {
+            return(NULL)
         }
-    }
-    # Return NULL if no default partition found
-    return(NULL)
+    )
 }
 
 default_partition <- function() {
