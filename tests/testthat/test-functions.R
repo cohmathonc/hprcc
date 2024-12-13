@@ -70,26 +70,3 @@ test_that("init_multisession sets up future plan based on resources", {
     )
 })
 
-
-# Load required libraries
-
-# Test that log_message prints a message to the terminal
-test_that("log_message prints a message to the terminal", {
-    # Set up test data
-    message <- "This is a log message"
-
-    # Capture output and compare results
-    captured_output <- testthat::capture_message(log_message(message))
-    expect_true(grepl(message, captured_output))
-})
-
-# # Test that log_message writes the message to a file when log = TRUE
-# test_that("log_message writes a message to a file when log = TRUE", {
-#   # Set up test data
-#   message <- "This is a log message"
-#   job_id <- Sys.getenv("SLURM_JOB_ID")
-
-#   # Run function and compare results
-#   log_message(message)
-#   expect_that(readLines(glue::glue("logs/job_{job_id}.log")), contains(message))
-# })

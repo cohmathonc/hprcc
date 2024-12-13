@@ -284,6 +284,7 @@ default_partition <- function() {
 }
 
 # Default Targets options ----------------------------------------------------
+#' @import autometric qs2
 configure_targets_options <- function() {
     # Define the common controllers
     controllers <- list(

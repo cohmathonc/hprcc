@@ -1,3 +1,11 @@
+# hprcc 0.0.0.9007
+ 
+* multiple bug fixes
+
+# hprcc 0.0.0.9006
+
+* update to new crew.cluster syntax
+
 # hprcc 0.0.0.9005
 
 * add support for gpu queue on _Gemini_

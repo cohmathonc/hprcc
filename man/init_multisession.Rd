@@ -10,7 +10,7 @@ init_multisession()
 Invisibly returns the result of \code{future::plan()}.
 }
 \description{
-Configures the {future} package for multisession computation, adapting resource
+Configures the \{future\} package for multisession computation, adapting resource
 settings based on the SLURM job's allocation or system resources.
 }
 \details{

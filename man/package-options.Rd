@@ -24,7 +24,7 @@ runs the \href{http://hprcc.coh.org/user-guide/rbioc/}{RStudio for Bioconductor}
 \code{autometric} package. Default: \code{FALSE}.}
 \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. Default: \code{FALSE}}
 \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_store_path()/jobs}; use the
-\code{targets} default of \verb{$TMPDIR} if \code{FALSE}. Default: \code{TRUE}}
+\code{targets} default of \verb{$TMPDIR} if \code{FALSE}. Default: \code{FALSE}}
 \item{hprcc.r_libs_user}{Path to user R libraries. If not set, defaults to \code{R_LIBS_SITE} environment
 variable or the R default of "~/R/x86_64-pc-linux-gnu-library/\%V".}
 \item{hprcc.r_libs_site}{Site-specific library path. Default set by \code{R_LIBS_USER}.

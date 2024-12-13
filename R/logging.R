@@ -1,8 +1,8 @@
 #' Log HPRCC Settings and Environment Variables
 #'
-#' Creates a detailed log file containing HPRCC settings, environment variables,
+#' Creates a detailed log file containing HPRCC settings, environment variables, 
 #' and system information. The log is written to the targets store directory
-#' under 'logs/hprcc_settings_{job_id}.txt' when SLURM logging is enabled.
+#' under 'logs/hprcc_settings_\{job_id\}.txt' when SLURM logging is enabled.
 #'
 #' @details
 #' The log file includes:

@@ -13,7 +13,7 @@ Returns NULL invisibly if logging is disabled.
 \description{
 Creates a detailed log file containing HPRCC settings, environment variables,
 and system information. The log is written to the targets store directory
-under 'logs/hprcc_settings_{job_id}.txt' when SLURM logging is enabled.
+under 'logs/hprcc_settings_\{job_id\}.txt' when SLURM logging is enabled.
 }
 \details{
 The log file includes:
