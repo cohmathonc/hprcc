@@ -85,27 +85,35 @@ init_multisession <- function() {
 #'     slurm_allocation()
 #' }
 slurm_allocation <- function() {
+    # Check if we're in a SLURM job
     slurm_job_id <- Sys.getenv("SLURM_JOB_ID")
     if (slurm_job_id == "") {
         warning("SLURM_JOB_ID not set.")
         return(NULL)
     }
 
-    job_info <- system2("sacct", c(
-        "-j", slurm_job_id, "--format=AllocCPUS,AllocTRES",
-        "--noheader", "--parsable2"
-    ), stdout = TRUE)
-
-    if (length(job_info) == 0) {
-        warning("Failed to retrieve job information.")
-        return(NULL)
+    # Get CPU allocation from environment variables
+    cpus <- if (Sys.getenv("SLURM_CPUS_PER_TASK") != "") {
+        as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
+    } else if (Sys.getenv("SLURM_CPUS_ON_NODE") != "") {
+        as.numeric(Sys.getenv("SLURM_CPUS_ON_NODE"))
+    } else {
+        warning("No CPU allocation information found in environment.")
+        1 # default if no SLURM CPU env vars set
     }
 
-    allocated_cpus <- as.numeric(stringr::str_extract(job_info[1], "(?<=cpu=)\\d+"))
-    mem_info <- stringr::str_extract(job_info[1], "mem=[0-9]+[GM]")
-    mem_in_gb <- as.numeric(sub("mem=([0-9]+)[GM]", "\\1", mem_info))
-    mem_in_gb <- ifelse(grepl("M", mem_info), mem_in_gb / 1024, mem_in_gb)
+    # Get memory allocation from environment variable (SLURM provides this in MB)
+    mem_mb <- Sys.getenv("SLURM_MEM_PER_NODE")
+    mem_in_gb <- if (mem_mb != "") {
+        as.numeric(mem_mb) / 1024 # Convert MB to GB
+    } else {
+        warning("SLURM_MEM_PER_NODE not set.")
+        NULL
+    }
 
-    list(job_id = slurm_job_id, CPUs = allocated_cpus, Memory_GB = mem_in_gb)
+    list(
+        job_id = slurm_job_id,
+        CPUs = cpus,
+        Memory_GB = mem_in_gb
+    )
 }
-
