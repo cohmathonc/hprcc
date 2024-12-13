@@ -1,6 +1,6 @@
 #' Log HPRCC Settings and Environment Variables
 #'
-#' Creates a detailed log file containing HPRCC settings, environment variables, 
+#' Creates a detailed log file containing HPRCC settings, environment variables,
 #' and system information. The log is written to the targets store directory
 #' under 'logs/hprcc_settings_\{job_id\}.txt' when SLURM logging is enabled.
 #'
@@ -91,7 +91,7 @@ log_hprcc_settings <- function() {
         SLURM_JOB_NAME = Sys.getenv("SLURM_JOB_NAME"),
         SLURM_SUBMIT_DIR = Sys.getenv("SLURM_SUBMIT_DIR"),
         SLURM_JOB_PARTITION = Sys.getenv("SLURM_JOB_PARTITION"),
-        SLURM_CPUS_PER_TASK = Sys.getenv("SLURM_CPUS_PER_TASK"),
+        SLURM_CPUS_ON_NODE = Sys.getenv("SLURM_CPUS_ON_NODE"),
         SLURM_MEM_PER_NODE = Sys.getenv("SLURM_MEM_PER_NODE"),
         SLURM_NODELIST = Sys.getenv("SLURM_NODELIST"),
         SLURM_NTASKS = Sys.getenv("SLURM_NTASKS"),
