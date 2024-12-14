@@ -8,7 +8,7 @@
 #' The **hprcc** package has a number of settings that can be configured
 #' via [options()][base::options] or environment variables, providing
 #' the flexibility to use it with any containerized environment supporting
-#' R and [{targets}][targets] (>=1.9.1).
+#' R and [targets][targets::targets] (>=1.9.1).
 #'
 #' Options can be set by calling [options()][base::options] _before_ loading the **hprcc** package in
 #' `_targets.R`. Option settings take precedence over environment variables, where
@@ -17,14 +17,14 @@
 #'
 #' @section Options:
 #' \describe{
-#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & [?autometric] logging. If
+#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & [autometric::autometric] logging. If
 #'         `TRUE`, logs are saved to [tar_path_store()][targets::tar_path_store]/logs. Logs capture the `stderr`
 #'         and `stdout` of each SLURM job, and can be parsed by [autometric::log_read()]. \cr
 #'         Default: `FALSE`.}
 #'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. \cr
 #'         Default: `FALSE`}
 #'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to [tar_path_store()][targets::tar_path_store]/jobs; use the
-#'         [{targets}][targets] default of `$TMPDIR` if `FALSE`. \cr
+#'         [targets][targets::targets] default of `$TMPDIR` if `FALSE`. \cr
 #'         Default: `FALSE`}
 #'   \item{hprcc.slurm_account}{character. SLURM account for job submission. \cr
 #'         Default: `$USER`}
@@ -50,7 +50,7 @@
 #'   \item{hprcc.default_partition}{Default SLURM partition. Automatically detected using `scontrol show partition`. \cr
 #'         Default: Dynamically retrieved default partition from SLURM configuration.}
 #' }
-#' 
+#'
 #' @keywords package
 #' @seealso \code{\link{create_controller}} for creating SLURM job controllers
 #' @name package-options
