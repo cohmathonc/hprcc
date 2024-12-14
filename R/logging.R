@@ -61,8 +61,8 @@ log_hprcc_settings <- function() {
         singularity_bin = getOption("hprcc.singularity_bin", default = singularity_bin()),
         singularity_container = getOption("hprcc.singularity_container", default = Sys.getenv("SINGULARITY_CONTAINER")),
         bind_dirs = getOption("hprcc.bind_dirs", default = Sys.getenv("SINGULARITY_BIND")),
-        default_partition = getOption("hprcc.default_partition", default = default_partition(),
-        parallelly_cores_methods = getOption("parallelly.availableCores.methods", default = ""))
+        default_partition = getOption("hprcc.default_partition", default = default_partition()),
+        parallelly_cores_methods = getOption("parallelly.availableCores.methods", default = "")
     )
 
     # Collect relevant environment variables
