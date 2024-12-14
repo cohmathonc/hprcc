@@ -1,5 +1,7 @@
 #' Remove hash suffix from phase name
 #' 
+#' Remove hash suffix from phase name
+#' 
 #' @param phase Character vector of phase names with IDs
 #' @return Character vector of cleaned phase names
 #' @keywords internal
@@ -81,6 +83,7 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
   }
   
   # Calculate bin statistics
+  # Calculate bin statistics
   stats <- data %>%
     mutate(
       time_bin = cut(time, 
@@ -96,6 +99,7 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
       .groups = "drop"
     )
   
+  # Build plot
   # Build plot
   ggplot(stats, aes(x = time)) +
     geom_ribbon(aes(ymin = min_val, 
@@ -137,6 +141,7 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
 #' @export
 explore_logs <- function(path = NULL) {
   # Load log data
+  # Load log data
   logs <- read_target_logs(path)
   
   # Add clean phase names as a column
@@ -147,11 +152,13 @@ explore_logs <- function(path = NULL) {
   phases <- sort(unique(logs$clean_phase_name))
   
   # Add wall time
+  # Add wall time
   logs <- logs %>%
     group_by(slurm_job_id) %>%
     mutate(walltime = time - min(time)) %>%
     ungroup()
   
+  # Define UI layout
   # Define UI layout
   ui <- fluidPage(
     titlePanel("Resource Usage Explorer"),
@@ -220,6 +227,7 @@ explore_logs <- function(path = NULL) {
   # Define server logic
   server <- function(input, output, session) {
     # Filter data reactively
+    # Filter data reactively
     filtered_data <- reactive({
       req(input$phase)
       
@@ -229,6 +237,7 @@ explore_logs <- function(path = NULL) {
                time <= input$time_window[2] * 60)
     })
     
+    # Update time range slider
     # Update time range slider
     observe({
       req(input$phase)
@@ -242,28 +251,34 @@ explore_logs <- function(path = NULL) {
     })
     
     # Memory plot
+    # Memory plot
     output$memory_plot <- renderPlot({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
       create_metric_plot(data, 
+      create_metric_plot(data, 
                      "resident", 
                      "Memory Usage (GB)",
                      input$normalize_time) +
         scale_y_continuous(labels = function(x) x/1024)
+        scale_y_continuous(labels = function(x) x/1024)
     })
     
+    # CPU plot
     # CPU plot
     output$cpu_plot <- renderPlot({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
       create_metric_plot(data, 
+      create_metric_plot(data, 
                      "cpu", 
                      "CPU Usage (%)",
                      input$normalize_time)
     })
 
+    # Wall time distribution plot
     # Wall time distribution plot
     output$wall_plot <- renderPlot({
       data <- filtered_data()
@@ -296,6 +311,7 @@ explore_logs <- function(path = NULL) {
     })
     
     # Memory statistics
+    # Memory statistics
     output$memory_stats <- renderTable({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
@@ -312,6 +328,7 @@ explore_logs <- function(path = NULL) {
         )
     })
     
+    # CPU statistics
     # CPU statistics
     output$cpu_stats <- renderTable({
       data <- filtered_data()
@@ -330,6 +347,7 @@ explore_logs <- function(path = NULL) {
     })
 
     # Wall time statistics
+    # Wall time statistics
     output$wall_stats <- renderTable({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
@@ -344,6 +362,7 @@ explore_logs <- function(path = NULL) {
         )
     })
     
+    # Analysis summary
     # Analysis summary
     output$analysis_text <- renderText({
       data <- filtered_data()
@@ -365,15 +384,22 @@ explore_logs <- function(path = NULL) {
         "Resource Usage Summary:\n",
         sprintf("Duration: %.1f minutes (avg)\n", mean(analysis$duration_min)),
         sprintf("Total jobs: %d\n\n", nrow(analysis)),
+        sprintf("Duration: %.1f minutes (avg)\n", mean(analysis$duration_min)),
+        sprintf("Total jobs: %d\n\n", nrow(analysis)),
         "Memory Usage:\n",
+        sprintf("Peak memory: %.1f GB\n", max(analysis$peak_mem_gb)),
+        sprintf("Average memory: %.1f GB\n\n", mean(analysis$median_mem_gb)),
         sprintf("Peak memory: %.1f GB\n", max(analysis$peak_mem_gb)),
         sprintf("Average memory: %.1f GB\n\n", mean(analysis$median_mem_gb)),
         "CPU Usage:\n",
         sprintf("Peak CPU: %.1f%%\n", max(analysis$peak_cpu)),
         sprintf("Average CPU: %.1f%%", mean(analysis$median_cpu))
+        sprintf("Peak CPU: %.1f%%\n", max(analysis$peak_cpu)),
+        sprintf("Average CPU: %.1f%%", mean(analysis$median_cpu))
       )
     })
     
+    # Resource recommendations
     # Resource recommendations
     output$recommendations <- renderText({
       data <- filtered_data()
