@@ -12,8 +12,6 @@ docs
 jobs
 doc/*
 Meta/*
-_targets/meta/meta
-_targets/.gitignore
-
+_targets/
 .library
 .Renviron
