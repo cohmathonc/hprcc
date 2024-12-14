@@ -21,43 +21,89 @@ out the [targets user manual](https://books.ropensci.org/targets/) or the excell
 If you are using [RStudio for Bioconductor](http://hprcc.coh.org/user-guide/rbioc/), no installation is necessary. **hprcc** 
 is installed and ready to go.
 
-You can install the development version of **hprcc** from GitHub with:
+You can install it locally too, although its functionality is limited off HPRCC clusters:
 
 ```
+if (!require("remotes")) install.packages("remotes")
 remotes::install_github("cohmathonc/hprcc")
 ```
 
-# A basic {targets} pipeline
+# Running Jobs with {targets}
 
-Let's start with a simple pipeline that does little more than some basic arithmetic. The details of
-the pipeline are not important, but this nicely demonstrates the ease with which you can farm
-out jobs to cluster nodes according to requirements:
+The **hprcc** package helps you run {targets} pipelines efficiently on HPRCC clusters by automatically configuring jobs based on their resource needs. Here's a simple example:
 
-```{r, eval=FALSE}
+```
 library(targets)
-# tar_script() writes a _targets.R file in the current working directory.
-# You could also edit this file directly.
-tar_script(
-    {
-        library(hprcc)
-        list(
-            # run on the same node as the main script
-            tar_target(y1, 1 + 1, deployment = "main"),
-            # run on a "tiny node" - 1 core, 1 GB RAM, 6 hrs
-            tar_target(y2, 1 + 1, , resources = tiny),
-            # run on a "small node" - 2 cores, 20 GB RAM, 6 hrs
-            tar_target(z, y1 + y2) # small is the default
-        )
-    },
-    ask = FALSE
-)
+library(hprcc)
+
+tar_script({
+    list(
+        # Run locally in the main session
+        tar_target(y1, 1 + 1, deployment = "main"),
+        
+        # Run on a tiny node (2 cores, 8GB RAM, 1 hour)
+        tar_target(y2, expensive_calculation(y1), 
+                  resources = tar_resources(crew = tar_resources_crew(controller = "tiny"))),
+        
+        # Run on a small node (2 cores, 20GB RAM, 6 hours) - this is the default
+        tar_target(z, y1 + y2)
+    )
+})
+
 tar_make()
 ```
 
-Loading the **hprcc** package sets a number of options for {targets} (via [tar_option_set()](https://docs.ropensci.org/targets/reference/tar_option_set.html)) that affect how jobs are run on the cluster: 
+When you load **hprcc**, it automatically configures {targets} with SLURM-friendly settings:
+- Uses the fast "qs" storage format instead of "rds"
+- Minimizes network traffic by using worker-based storage/retrieval 
+- Sets up node controllers for different job sizes:
+  - `tiny`: 2 cores, 8GB RAM, 1 hour max 
+  - `small`: 2 cores, 20GB RAM, 6 hours max (default)
+  - `medium`: 4 cores, 40GB RAM, 6 hours max
+  - `large`: 8 cores, 80GB RAM, 6 hours max 
+  - `xlarge`: 20 cores, 200GB RAM, 12 hours max
+  - `huge`: 40 cores, 200GB RAM, 2 hours max
+  - `large_mem`: 8 cores, 800GB RAM, 6 hours max (for memory-intensive jobs)
+  - `retry`: Automatically retries failed jobs with increasing resources
 
- - The storage `format` is set to "qs", which is a bit faster than the default "rds" format.
- - The `storage` and `retrieval` options are set to "worker", which saves on cluster network traffic. 
- - The `controller` option is set to a `crew_controller_group` object, which is a collection of `crew_controllers` configured by [`create_controller()`](../reference/create_controller.html) for different SLURM job sizes. The default controller is "small". 
+On the Gemini cluster, GPU nodes are also available:
+  - `gpu_medium`: 4 cores, 60GB RAM, 2 hours max on A100/V100 GPUs
+  - `gpu_large`: 8 cores, 120GB RAM, 4 hours max on A100/V100 GPUs
 
-If you wish to change these options, you can do so by calling [tar_option_set()](https://docs.ropensci.org/targets/reference/tar_option_set.html) **_after_** loading **hprcc**. 
+# Logging and Utilities 
+
+**hprcc** includes some handy utilities for working with the cluster:
+
+```
+# Initialize multisession computation based on your SLURM allocation
+init_multisession()
+
+# Check your current SLURM resource allocation
+slurm_allocation()
+
+# Enable detailed SLURM logging (writes to _targets/logs/)
+options(hprcc.slurm_logs = TRUE)
+```
+
+# Configuration 
+
+You can customize **hprcc**'s behavior through R options or environment variables. Some useful ones:
+
+```
+# Stage SLURM job scripts in _targets/jobs/ instead of $TMPDIR
+options(hprcc.slurm_jobs = TRUE)
+
+# Show SLURM messages in the console
+options(hprcc.slurm_verbose = TRUE)
+
+# Change the SLURM account used for job submission
+options(hprcc.slurm_account = "my_account")
+```
+
+Check out `?hprcc::package-options` for the full list of configuration options.
+
+# Using Containers
+
+**hprcc** uses Singularity containers to ensure consistent environments across both
+Apollo and Gemini clusters. By default, it uses the [RStudio for Bioconductor](http://hprcc.coh.org/user-guide/rbioc/)
+container, but you can configure this through options if needed.

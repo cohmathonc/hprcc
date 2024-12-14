@@ -11,11 +11,12 @@ navbar:
   components:
     hprcc:
       icon: fa-house
-      href: http://hprcc.coh.org/user-guide/rbioc/
+      href: http://cgt.coh.org/hprcc
       aria-label: hprcc
       text: Home
+deploy:
+  install_metadata: true
 reference:
-
   - title: "Preconfigured SLURM Resources"
     desc: "Preconfigured resources for SLURM job execution."
     contents:
@@ -28,7 +29,6 @@ reference:
       - huge
       - gpu_medium
       - gpu_large
-
 
   - title: "SLURM Controllers and Utilities"
     desc: "Tools for setting up and managing SLURM job controllers."

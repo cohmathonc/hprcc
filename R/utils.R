@@ -93,11 +93,9 @@ slurm_allocation <- function() {
     }
 
     # Get CPU allocation from environment variables
-    cpus <- if (Sys.getenv("SLURM_CPUS_PER_TASK") != "") {
-        as.numeric(Sys.getenv("SLURM_CPUS_PER_TASK"))
-    } else if (Sys.getenv("SLURM_CPUS_ON_NODE") != "") {
+    cpus <- if (Sys.getenv("SLURM_CPUS_ON_NODE") != "") {
         as.numeric(Sys.getenv("SLURM_CPUS_ON_NODE"))
-    } else {
+    }  else {
         warning("No CPU allocation information found in environment.")
         1 # default if no SLURM CPU env vars set
     }

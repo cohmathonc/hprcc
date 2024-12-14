@@ -25,8 +25,11 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
+        options(hprcc.slurm_logs = TRUE, hprcc.slurm_jobs = TRUE)
         tar_source("../R")
+        configure_targets_options()
         controller <- create_controller("tiny", slurm_cpus = 2, slurm_mem_gigabytes = 8, slurm_walltime_minutes = 60)
+        log_hprcc_settings()
         targets::tar_option_set(
             format = "qs",
             storage = "worker",

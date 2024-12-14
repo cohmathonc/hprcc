@@ -37,7 +37,7 @@ devtools::document()
 pkgdown::build_site()
 
 # Draft a release for GitHub
-usethis::use_github_release()
+usethis::use_github_release(publish = FALSE)
 
 # Publish to hprcc.coh.org
-system("rsync -avz --delete _site/ domeally@cgt.coh.org:/labs/rrockne/MHO/hprcc-www") #/home/domeally/omeally/hprcc/docs/user-guide/rbioc/hprcc")
+system("rsync -avz --delete _site/ domeally@cgt.coh.org:/labs/rrockne/MHO/hprcc-www")
