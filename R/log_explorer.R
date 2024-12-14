@@ -202,13 +202,25 @@ explore_logs <- function(path = NULL) {
     })
 
     # Wall time distribution plot
+    # Wall time distribution plot
     output$wall_plot <- renderPlot({
       data <- filtered_data()
-      if(nrow(data) == 0) return(NULL)
+      if(nrow(data) == 0) {
+        plot.new()
+        title("No data available for wall time plot")
+        return()
+      }
       
       completion_times <- data %>%
         group_by(slurm_job_id) %>%
-        summarise(completion_time = diff(range(time))/60)
+        summarise(completion_time = if(n() > 1) { diff(range(time, na.rm = TRUE))/60 } else { NA_real_ }) %>%
+        filter(!is.na(completion_time))
+      
+      if(nrow(completion_times) < 2) {
+        plot.new()
+        title("Insufficient variation in completion times")
+        return()
+      }
       
       ggplot(completion_times, aes(x = completion_time)) +
         geom_histogram(aes(y = ..density..), 
