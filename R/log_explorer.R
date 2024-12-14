@@ -203,6 +203,7 @@ explore_logs <- function(path = NULL) {
 
     # Wall time distribution plot
     # Wall time distribution plot
+    # Wall time distribution plot
     output$wall_plot <- renderPlot({
       data <- filtered_data()
       if(nrow(data) == 0) {
@@ -213,12 +214,11 @@ explore_logs <- function(path = NULL) {
       
       completion_times <- data %>%
         group_by(slurm_job_id) %>%
-        summarise(completion_time = if(n() > 1) { diff(range(time, na.rm = TRUE))/60 } else { NA_real_ }) %>%
-        filter(!is.na(completion_time))
+        summarise(completion_time = if(n() > 1) { diff(range(time, na.rm = TRUE))/60 } else { diff(range(time, na.rm = TRUE))/60 })
       
       if(nrow(completion_times) < 2) {
         plot.new()
-        title("Insufficient variation in completion times")
+        title(sprintf("Task completed in: %.1f minutes", completion_times$completion_time))
         return()
       }
       
