@@ -4,7 +4,11 @@
 #' @importFrom shiny helpText checkboxInput plotOutput div tabsetPanel tabPanel verbatimTextOutput
 #' @importFrom shiny tableOutput renderPlot renderTable renderText req updateSliderInput sliderInput
 #' @importFrom shiny shinyApp
-#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line labs theme_minimal theme geom_histogram
+    geom_ribbon(aes(ymin = min_val, 
+                    ymax = max_val),
+                fill = "#4B7BE5",
+                alpha = 0.2) +
+
 #' @importFrom ggplot2 geom_density scale_y_continuous
 
 #' Remove hash suffix from phase name
@@ -55,7 +59,11 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
   
   # Build plot
   ggplot(stats, aes(x = time)) +
-    geom_ribbon(aes(ymin = ci_lower, 
+    geom_ribbon(aes(ymin = min_val, 
+                    ymax = max_val),
+                fill = "#4B7BE5",
+                alpha = 0.2) +
+
                     ymax = ci_upper),
                 fill = "#4B7BE5",
                 alpha = 0.2) +
