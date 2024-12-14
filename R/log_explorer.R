@@ -1,10 +1,19 @@
+#' @importFrom dplyr %>% mutate filter group_by ungroup summarise n
+#' @importFrom stats median quantile sd diff
+#' @importFrom shiny fluidPage titlePanel sidebarLayout sidebarPanel mainPanel selectizeInput hr 
+#' @importFrom shiny helpText checkboxInput plotOutput div tabsetPanel tabPanel verbatimTextOutput
+#' @importFrom shiny tableOutput renderPlot renderTable renderText req updateSliderInput sliderInput
+#' @importFrom shiny shinyApp
+#' @importFrom ggplot2 ggplot aes geom_ribbon geom_line labs theme_minimal theme geom_histogram
+#' @importFrom ggplot2 geom_density scale_y_continuous
+
 #' Remove hash suffix from phase name
 #' 
 #' @param phase Character vector of phase names with IDs
 #' @return Character vector of cleaned phase names 
 clean_phase_name <- function(phase) {
   # Remove hash suffix to group tasks by phase
-  sub("_[0-9a-f]{32}$", "", phase)
+  sub("_[0-9a-f]{16}$", "", phase)
 }
 
 #' Create metric plot with confidence intervals
@@ -67,9 +76,12 @@ explore_logs <- function(path = NULL) {
   # Load log data
   logs <- read_target_logs(path)
   
-  # Clean phase names
-  logs$clean_phase <- clean_phase_name(logs$phase)
-  phases <- sort(unique(logs$clean_phase))
+  # Add clean phase names as a column
+  logs <- logs %>%
+    mutate(clean_phase_name = clean_phase_name(phase))
+  
+  # Get unique cleaned phase names
+  phases <- sort(unique(logs$clean_phase_name))
   
   # Add wall time
   logs <- logs %>%
@@ -149,7 +161,7 @@ explore_logs <- function(path = NULL) {
       req(input$phase)
       
       logs %>%
-        filter(clean_phase == input$phase,
+        filter(clean_phase_name == input$phase,
                time >= input$time_window[1] * 60,
                time <= input$time_window[2] * 60)
     })
@@ -157,7 +169,7 @@ explore_logs <- function(path = NULL) {
     # Update time range slider
     observe({
       req(input$phase)
-      phase_data <- logs[logs$clean_phase == input$phase,]
+      phase_data <- logs[logs$clean_phase_name == input$phase,]
       max_time <- max(phase_data$time)/60
       
       updateSliderInput(session, "time_window",
@@ -252,9 +264,9 @@ explore_logs <- function(path = NULL) {
       data %>%
         group_by(slurm_job_id) %>%
         summarise(
-          "Duration (min)" = diff(range(time))/60 %>% round(1),
-          "Peak Rate (min/min)" = max(diff(walltime/60)) %>% round(2),
-          "Average Rate (min/min)" = mean(diff(walltime/60)) %>% round(2),
+          "Duration (min)" = if (n() > 1) { diff(range(time, na.rm = TRUE))/60 %>% round(1) } else { NA_real_ },
+"Peak Rate (min/min)" = if (n() > 1) { max(diff(walltime/60), na.rm = TRUE) %>% round(2) } else { NA_real_ },
+"Average Rate (min/min)" = if (n() > 1) { mean(diff(walltime/60), na.rm = TRUE) %>% round(2) } else { NA_real_ },
           .groups = "drop"
         )
     })
