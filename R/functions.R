@@ -57,6 +57,9 @@
 #' @aliases hprcc-package
 NULL
 
+# Env for storing package settings
+HPRCC <- new.env(parent = environment())
+
 #' Determine Cluster Name Based on Hostname
 #'
 #' Retrieves the name of the COH HPRCC cluster by matching the system's hostname
@@ -138,54 +141,26 @@ create_controller <- function(name,
         gpu_req <- ""
     }
 
-    r_libs_user <- if (nzchar(user_libs_path <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER")))) {
-        glue::glue("--env R_LIBS_USER={user_libs_path}")
-    } else {
-        ""
-    }
-    r_libs_site <- r_libs_site()
-
-    slurm_account <- if (nzchar(account <- getOption("hprcc.slurm_account", ""))) glue::glue("#SBATCH --account {account}") else ""
-
-    singularity_bin <- singularity_bin()
-
-    singularity_bind_dirs <- singularity_bind_dirs()
-
-    singularity_container <- singularity_container()
-
-    use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
-    slurm_jobs_dir <- if (use_jobs_dir) here::here(glue::glue("{targets::tar_path_store()}/jobs")) else tempdir()
-    if (use_jobs_dir) dir.create(slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
-
-    use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
-    log_output <- here::here(glue::glue("{targets::tar_path_store()}/logs/slurm-%j.out"))
-    if (use_slurm_log) {
-        dir.create(dirname(log_output), recursive = TRUE, showWarnings = FALSE)
-    } else {
-        log_output <- "/dev/null"
-    }
-
-    verbose_slurm <- getOption("hprcc.slurm_verbose", FALSE)
-
     script_lines <- glue::glue(
-    "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else ''} ",
-    "{if (!is.null(slurm_account) && nzchar(slurm_account)) slurm_account else ''} ",
-    "{singularity_bin} exec {if (!is.null(r_libs_user) && nzchar(r_libs_user)) r_libs_user else ''} \\
---env R_LIBS_SITE={r_libs_site} \\
+        "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else ''} ",
+        "{HPRCC$slurm_account} ",
+        "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
+--env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\
--B {singularity_bind_dirs} \\
-{singularity_container} \\")
+-B {HPRCC$singularity_bind_dirs} \\
+{HPRCC$singularity_container} \\"
+    )
 
     slurm_options <- crew.cluster::crew_options_slurm(
-        script_directory = slurm_jobs_dir,
+        script_directory = HPRCC$slurm_jobs_dir,
         script_lines = script_lines,
         cpus_per_task = slurm_cpus,
         memory_gigabytes_required = slurm_mem_gigabytes,
         time_minutes = slurm_walltime_minutes,
         partition = slurm_partition,
-        log_output = log_output,
-        log_error = log_output,
-        verbose = isTRUE(verbose_slurm)
+        log_output = HPRCC$log_output,
+        log_error = HPRCC$log_output,
+        verbose = HPRCC$verbose_slurm
     )
 
     crew.cluster::crew_controller_slurm(
@@ -197,6 +172,7 @@ create_controller <- function(name,
         options_metrics = crew::crew_options_metrics(path = "/dev/stdout", seconds_interval = 1L)
     )
 }
+
 
 # Internal functions ---------------------------------------------------------
 
@@ -302,6 +278,32 @@ default_partition <- function() {
 #' @import autometric
 #' @import qs2
 configure_targets_options <- function() {
+    # Populate the HPRCC environment
+    HPRCC$r_libs_user <- if (nzchar(user_libs_path <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER")))) {
+        glue::glue("--env R_LIBS_USER={user_libs_path}")
+    } else {
+        ""
+    }
+    HPRCC$r_libs_site <- r_libs_site()
+    HPRCC$slurm_account <- if (nzchar(account <- getOption("hprcc.slurm_account", ""))) glue::glue("#SBATCH --account {account}") else ""
+    HPRCC$singularity_bin <- singularity_bin()
+    HPRCC$singularity_bind_dirs <- singularity_bind_dirs()
+    HPRCC$singularity_container <- singularity_container()
+
+    HPRCC$use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
+    HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir) here::here(glue::glue("{targets::tar_path_store()}/jobs")) else tempdir()
+    if (HPRCC$use_jobs_dir) dir.create(HPRCC$slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
+
+    HPRCC$use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
+    HPRCC$log_output <- here::here(glue::glue("{targets::tar_path_store()}/logs/slurm-%j.out"))
+    if (HPRCC$use_slurm_log) {
+        dir.create(dirname(HPRCC$log_output), recursive = TRUE, showWarnings = FALSE)
+    } else {
+        HPRCC$log_output <- "/dev/null"
+    }
+
+    HPRCC$verbose_slurm <- isTRUE(getOption("hprcc.slurm_verbose", FALSE))
+
     # Define the common controllers
     controllers <- list(
         create_controller("tiny", slurm_cpus = 2L, slurm_mem_gigabytes = 8L, slurm_walltime_minutes = 60L),
@@ -337,7 +339,7 @@ configure_targets_options <- function() {
         retrieval = "worker",
         controller = do.call(crew::crew_controller_group, controllers),
         resources = targets::tar_resources(
-            crew = targets::tar_resources_crew(controller = "small")
+        crew = targets::tar_resources_crew(controller = "small")
         )
     )
 }
