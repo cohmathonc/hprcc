@@ -295,7 +295,7 @@ configure_targets_options <- function() {
     if (HPRCC$use_jobs_dir) dir.create(HPRCC$slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
 
     HPRCC$use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
-    HPRCC$log_output <- here::here(glue::glue("{targets::tar_path_store()}/logs/slurm-%j.out"))
+    HPRCC$log_output <- here::here(glue::glue("{targets::tar_path_store()}/logs/crew-%j.out"))
     if (HPRCC$use_slurm_log) {
         dir.create(dirname(HPRCC$log_output), recursive = TRUE, showWarnings = FALSE)
     } else {
