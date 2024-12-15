@@ -1,18 +1,12 @@
-#' @importFrom dplyr %>% mutate filter group_by ungroup summarise n
-#' @importFrom stats median quantile sd diff
-#' @importFrom shiny fluidPage titlePanel sidebarLayout sidebarPanel mainPanel selectizeInput hr 
-#' @importFrom shiny helpText checkboxInput plotOutput div tabsetPanel tabPanel verbatimTextOutput
-#' @importFrom shiny tableOutput renderPlot renderTable renderText req updateSliderInput sliderInput
-#' @importFrom shiny shinyApp
-#' @importFrom ggplot2 geom_density scale_y_continuous
-
 #' Remove hash suffix from phase name
 #' 
 #' @param phase Character vector of phase names with IDs
-#' @return Character vector of cleaned phase names 
+#' @return Character vector of cleaned phase names
+#' @keywords internal
+#' @noRd
 clean_phase_name <- function(phase) {
-  # Remove hash suffix to group tasks by phase
-  sub("_[0-9a-f]{16}$", "", phase)
+    # Remove hash suffix to group tasks by phase
+    sub("_[0-9a-f]{16}$", "", phase)
 }
 
 autometric_hprcc_controllers <- function() {
@@ -65,12 +59,13 @@ autometric_hprcc_controllers <- function() {
     return(controllers)
 }
 
-#' Create metric plot with confidence intervals
+#' Create metric plot with max n min
 #'
 #' @param data Data frame with log data
 #' @param metric Column name to plot
 #' @param y_label Y-axis label
 #' @param normalize_time Whether to normalize time axis
+#' @keywords internal
 create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
   # Scale time axis
   if(normalize_time) {
@@ -116,9 +111,29 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
     theme(legend.position = "none")
 }
 
-#' Run shiny app to explore log data
+#' Run Shiny app to explore autometric log data
 #'
-#' @param path Path to _targets/logs directory
+#' Launch an interactive Shiny application for visualizing and analyzing resource usage logs created by 
+#' the autometric package. The app provides plots and statistics for memory usage, CPU utilization, 
+#' and task completion times, and resource request suggestions.
+#'
+#' @param path Path to _targets/logs directory. If NULL, will attempt to find logs in default location
+#'
+#' @return A Shiny application object
+#' 
+#' @details
+#' The application provides:
+#' * Interactive plots for memory, CPU usage and wall time analysis
+#' * Resource usage statistics by job
+#' * Analysis of usage patterns
+#' * Controller recommendations based on observed resource requirements
+#'
+#' @examples
+#' \dontrun{
+#' explore_logs()
+#' explore_logs("path/to/logs")
+#' }
+#'
 #' @export
 explore_logs <- function(path = NULL) {
   # Load log data

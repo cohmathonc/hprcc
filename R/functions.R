@@ -8,8 +8,8 @@
 #' The **hprcc** package has a number of settings that can be configured
 #' via [options()][base::options] or environment variables, providing
 #' the flexibility to use it with any containerized environment supporting
-#' R and [targets][targets::targets] (>=1.9.1).
-#'
+#' R and \pkg{targets} (>=1.9.1).
+#' 
 #' Options can be set by calling [options()][base::options] _before_ loading the **hprcc** package in
 #' `_targets.R`. Option settings take precedence over environment variables, where
 #' indicated below. If no `options` are set, the default configuration
@@ -17,20 +17,20 @@
 #'
 #' @section Options:
 #' \describe{
-#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & [autometric::autometric] logging. If
-#'         `TRUE`, logs are saved to [tar_path_store()][targets::tar_path_store]/logs. Logs capture the `stderr`
+#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & \pkg{autometric} logging. If
+#'         `TRUE`, logs are saved to \code{tar_path_store()}/logs. Logs capture the `stderr`
 #'         and `stdout` of each SLURM job, and can be parsed by [autometric::log_read()]. \cr
 #'         Default: `FALSE`.}
 #'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. \cr
 #'         Default: `FALSE`}
-#'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to [tar_path_store()][targets::tar_path_store]/jobs; use the
-#'         [targets][targets::targets] default of `$TMPDIR` if `FALSE`. \cr
+#'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_path_store()}/jobs; use the
+#'         default of `$TMPDIR` if `FALSE`. \cr
 #'         Default: `FALSE`}
 #'   \item{hprcc.slurm_account}{character. SLURM account for job submission. \cr
 #'         Default: `$USER`}
 #'   \item{hprcc.r_libs_user}{Path to user R libraries. \cr
 #'         Environment: `$R_LIBS_USER` \cr
-#'         Default: User's R library path or `~/R/x86_64-pc-linux-gnu-library/%V`}
+#'         Default: `"~/R/x86_64-pc-linux-gnu-library/%V"`}
 #'   \item{hprcc.r_libs_site}{Site-specific library path. \cr
 #'         Environment: `$R_LIBS_SITE` \cr
 #'         Apollo default: `"/opt/singularity-images/rbioc/rlibs/bioc-$BIOCONDUCTOR_VERSION"` \cr
@@ -115,9 +115,23 @@ get_cluster <- function() {
 #' @return A `crew_controller` object, ready to manage SLURM job submissions and monitoring.
 #' @export
 #' @examples
-#' if (interactive()) {
-#'     create_controller("my_controller", slurm_cpus = 4, slurm_gigabytes = 8)
+#' # Basic controller with minimal resources
+#' ctrl <- create_controller("test",
+#'                         slurm_cpus = 2,
+#'                         slurm_mem_gigabytes = 8)
+#'
+#' # GPU configuration on Gemini
+#' if (get_cluster() == "gemini") {
+#'   gpu_ctrl <- create_controller("gpu_job",
+#'                               slurm_cpus = 4,
+#'                               slurm_mem_gigabytes = 60,
+#'                               slurm_partition = "gpu-a100")
 #' }
+#'
+#' # Retry controller with escalating resources
+#' retry_ctrl <- create_controller("retry",
+#'                               slurm_cpus = c(2, 4, 8),
+#'                               slurm_mem_gigabytes = c(8, 16, 32))
 #' @importFrom glue glue
 #' @importFrom here here
 #' @importFrom crew.cluster crew_controller_slurm
