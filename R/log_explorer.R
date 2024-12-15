@@ -49,22 +49,12 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
     ) %>%
     group_by(time_bin) %>%
     summarise(
-      time = mean(time),
-      mean_val = mean(.data[[metric]], na.rm = TRUE),
-      sd_val = sd(.data[[metric]], na.rm = TRUE),
-      ci_lower = mean_val - 1.96 * sd_val/sqrt(n()),
-      ci_upper = mean_val + 1.96 * sd_val/sqrt(n()),
-      .groups = "drop"
     )
   
   # Build plot
   ggplot(stats, aes(x = time)) +
     geom_ribbon(aes(ymin = min_val, 
                     ymax = max_val),
-                fill = "#4B7BE5",
-                alpha = 0.2) +
-
-                    ymax = ci_upper),
                 fill = "#4B7BE5",
                 alpha = 0.2) +
     geom_line(aes(y = mean_val),
@@ -223,39 +213,7 @@ explore_logs <- function(path = NULL) {
       completion_times <- data %>%
         group_by(slurm_job_id) %>%
         summarise(completion_time = if(n() > 1) { diff(range(time, na.rm = TRUE))/60 } else { diff(range(time, na.rm = TRUE))/60 })
-      
-      if(nrow(completion_times) < 2) {
-        plot.new()
-        title(sprintf("Task completed in: %.1f minutes", completion_times$completion_time))
-        return()
-      }
-      
-      ggplot(completion_times, aes(x = completion_time)) +
-        geom_histogram(aes(y = ..density..), 
-                      fill = "#4B7BE5", 
-                      alpha = 0.6, 
-                      bins = 30) +
-        geom_density(color = "#3C5488", 
-                    linewidth = 1) +
-        labs(x = "Completion Time (minutes)", 
-             y = "Density") +
-        theme_minimal()
-    })
-    
-    # Memory statistics
-    output$memory_stats <- renderTable({
-      data <- filtered_data()
-      if(nrow(data) == 0) return(NULL)
-      
-      data %>%
-        group_by(slurm_job_id) %>%
         summarise(
-          "Min (GB)" = min(resident/1024) %>% round(1),
-          "Median (GB)" = median(resident/1024) %>% round(1),
-          "Max (GB)" = max(resident/1024) %>% round(1),
-          "95th Percentile (GB)" = quantile(resident/1024, 0.95) %>% round(1),
-          "Duration (min)" = diff(range(time))/60 %>% round(1),
-          .groups = "drop"
         )
     })
     
@@ -267,12 +225,6 @@ explore_logs <- function(path = NULL) {
       data %>%
         group_by(slurm_job_id) %>%
         summarise(
-          "Median (%)" = median(cpu) %>% round(1),
-          "Max (%)" = max(cpu) %>% round(1),
-          "95th Percentile (%)" = quantile(cpu, 0.95) %>% round(1),
-          "High CPU Time (%)" = (sum(cpu > 90) / n() * 100) %>% round(1),
-          "Duration (min)" = diff(range(time))/60 %>% round(1),
-          .groups = "drop"
         )
     })
 
@@ -284,10 +236,6 @@ explore_logs <- function(path = NULL) {
       data %>%
         group_by(slurm_job_id) %>%
         summarise(
-          "Duration (min)" = if (n() > 1) { diff(range(time, na.rm = TRUE))/60 %>% round(1) } else { NA_real_ },
-"Peak Rate (min/min)" = if (n() > 1) { max(diff(walltime/60), na.rm = TRUE) %>% round(2) } else { NA_real_ },
-"Average Rate (min/min)" = if (n() > 1) { mean(diff(walltime/60), na.rm = TRUE) %>% round(2) } else { NA_real_ },
-          .groups = "drop"
         )
     })
     
@@ -299,12 +247,6 @@ explore_logs <- function(path = NULL) {
       analysis <- data %>%
         group_by(slurm_job_id) %>%
         summarise(
-          peak_mem_gb = max(resident)/1024,
-          median_mem_gb = median(resident)/1024,
-          peak_cpu = max(cpu),
-          median_cpu = median(cpu),
-          duration_min = diff(range(time))/60,
-          .groups = "drop"
         )
       
       paste(
@@ -329,12 +271,6 @@ explore_logs <- function(path = NULL) {
       analysis <- data %>%
         group_by(slurm_job_id) %>%
         summarise(
-          peak_mem_gb = max(resident)/1024,
-          median_mem_gb = median(resident)/1024,
-          peak_cpu = max(cpu),
-          median_cpu = median(cpu),
-          duration_min = diff(range(time))/60,
-          .groups = "drop"
         )
       
       recommendations <- character()
@@ -376,3 +312,10 @@ explore_logs <- function(path = NULL) {
   # Launch app
   shinyApp(ui = ui, server = server)
 }
+    summarise(
+      time = mean(time),
+      mean_val = mean(.data[[metric]], na.rm = TRUE),
+      min_val = min(.data[[metric]], na.rm = TRUE),
+      max_val = max(.data[[metric]], na.rm = TRUE),
+      .groups = "drop"
+    )
