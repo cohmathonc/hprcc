@@ -64,6 +64,10 @@ autometric_hprcc_controllers <- function() {
     return(controllers)
 }
 
+### globals
+utils::globalVariables(c(
+  "slurm_job_id", "time", "time_bin", "min_val", "max_val", "mean_val"
+))
 #' Create metric plot with max n min
 #'
 #' @param data Data frame with log data
@@ -73,10 +77,6 @@ autometric_hprcc_controllers <- function() {
 #' @import ggplot2
 #' @importFrom dplyr mutate group_by ungroup summarise
 #' @keywords internal
-utils::globalVariables(c(
-  "slurm_job_id", "time", "time_bin", "min_val", "max_val", "mean_val"
-))
-
 create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
   # Scale time axis
   if(normalize_time) {
@@ -122,6 +122,12 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
     theme(legend.position = "none")
 }
 
+### globals
+utils::globalVariables(c(
+  "slurm_job_id", "time", "time_bin", "min_val", "max_val", 
+  "mean_val", "phase", "completion_time", "resident", "cpu",
+  "walltime"
+))
 #' Run Shiny app to explore autometric log data
 #'
 #' Launch an interactive Shiny application for visualizing and analyzing resource usage logs created by 
@@ -146,12 +152,6 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
 #' }
 #'
 #' @export
-utils::globalVariables(c(
-  "slurm_job_id", "time", "time_bin", "min_val", "max_val", 
-  "mean_val", "phase", "completion_time", "resident", "cpu",
-  "walltime"
-))
-
 explore_logs <- function(path = NULL) {
   # Load log data
   logs <- read_targets_logs(path)
