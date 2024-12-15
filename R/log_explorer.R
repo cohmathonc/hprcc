@@ -15,6 +15,56 @@ clean_phase_name <- function(phase) {
   sub("_[0-9a-f]{16}$", "", phase)
 }
 
+autometric_hprcc_controllers <- function() {
+    # Define the hard-coded controller parameters
+    controllers <- list(
+        list(
+            name = "tiny", 
+            cpus = 2L, 
+            memory_gigabytes = 8L, 
+            walltime_minutes = 60L
+        ),
+        list(
+            name = "small", 
+            cpus = 2L, 
+            memory_gigabytes = 20L, 
+            walltime_minutes = 360L
+        ),
+        list(
+            name = "medium", 
+            cpus = 4L, 
+            memory_gigabytes = 40L, 
+            walltime_minutes = 360L
+        ),
+        list(
+            name = "large", 
+            cpus = 8L, 
+            memory_gigabytes = 80L, 
+            walltime_minutes = 360L
+        ),
+        list(
+            name = "large_mem", 
+            cpus = 8L, 
+            memory_gigabytes = 800L, 
+            walltime_minutes = 360L
+        ),
+        list(
+            name = "xlarge", 
+            cpus = 20L, 
+            memory_gigabytes = 200L, 
+            walltime_minutes = 360L
+        ),
+        list(
+            name = "huge", 
+            cpus = 40L, 
+            memory_gigabytes = 200L, 
+            walltime_minutes = 120L
+        )
+    )
+    
+    return(controllers)
+}
+
 #' Create metric plot with confidence intervals
 #'
 #' @param data Data frame with log data
@@ -311,56 +361,76 @@ explore_logs <- function(path = NULL) {
     
     # Resource recommendations
     output$recommendations <- renderText({
-      data <- filtered_data()
-      if(nrow(data) == 0) return("No data available for recommendations")
-      
-      analysis <- data %>%
+    data <- filtered_data()
+    if (nrow(data) == 0) return("No data available for recommendations")
+    
+    # Retrieve controllers
+    controllers <- autometric_hprcc_controllers()
+    
+    analysis <- data %>%
         group_by(slurm_job_id) %>%
         summarise(
-          peak_mem_gb = max(resident)/1024,
-          median_mem_gb = median(resident)/1024,
-          peak_cpu = max(cpu),
-          median_cpu = median(cpu),
-          duration_min = diff(range(time))/60,
-          .groups = "drop"
+            peak_mem_gb = max(resident)/1024,
+            median_mem_gb = median(resident)/1024,
+            peak_cpu = max(cpu),
+            median_cpu = median(cpu),
+            duration_min = diff(range(time))/60,
+            .groups = "drop"
         )
-      
-      recommendations <- character()
-      
-      # Check memory usage
-      high_mem <- !is.na(analysis$peak_mem_gb) & analysis$peak_mem_gb > 16
-      if(any(high_mem, na.rm = TRUE)) {
-        recommendations <- c(recommendations,
-          sprintf("* High memory usage (>16GB). Peak: %.1f GB", 
-                  max(analysis$peak_mem_gb, na.rm = TRUE)))
-      }
-      
-      # Check CPU efficiency
-      low_cpu <- !is.na(analysis$median_cpu) & analysis$median_cpu < 50
-      if(any(low_cpu, na.rm = TRUE)) {
-        recommendations <- c(recommendations,
-          sprintf("* Low CPU utilization. Average: %.1f%%", 
-                  mean(analysis$median_cpu, na.rm = TRUE)))
-      }
-      
-      # Check duration consistency
-      duration_var <- if(all(is.na(analysis$duration_min))) NA_real_ else sd(analysis$duration_min, na.rm = TRUE)/mean(analysis$duration_min, na.rm = TRUE)
-      if(!is.na(duration_var) && duration_var > 0.2) {
-        recommendations <- c(recommendations,
-          sprintf("* High variation in completion times (CV: %.1f%%)", 
-                  duration_var * 100))
-      }
-      
-      # Format output
-      if(length(recommendations) == 0) {
-        "Resource usage appears optimal for all jobs."
-      } else {
-        paste("Recommendations:\n\n",
-              paste(recommendations, collapse = "\n\n"))
-      }
+    
+    # Initialize recommendations list
+    recommendations <- character()
+    
+    # Determine recommended controller
+    recommended_controller <- tryCatch({
+        # Find controllers that meet memory and CPU requirements
+        appropriate_controllers <- Filter(function(params) {
+            params$memory_gigabytes >= max(analysis$peak_mem_gb) &&
+            params$cpus >= median(analysis$peak_cpu)
+        }, controllers)
+        
+        # If suitable controllers found, choose the most minimal one
+        if (length(appropriate_controllers) > 0) {
+            min_controller <- appropriate_controllers[[
+                which.min(sapply(appropriate_controllers, function(x) x$memory_gigabytes))
+            ]]
+            
+            sprintf(
+                "Recommended Controller: %s (CPUs: %d, Memory: %.1f GB, Walltime: %d min)", 
+                min_controller$name, 
+                min_controller$cpus, 
+                min_controller$memory_gigabytes, 
+                min_controller$walltime_minutes
+            )
+        } else {
+            "Could not recommend a suitable controller. Consider 'large_mem' or retry with adjusted resources."
+        }
+    }, error = function(e) {
+        "Error determining recommended controller."
     })
-  }
-  
-  # Launch app
-  shinyApp(ui = ui, server = server)
+    
+    # Add specific recommendations based on resource usage
+    recommendations <- c(
+        if (any(analysis$peak_mem_gb > 200)) {
+            "High memory usage detected. Consider using 'large_mem' or 'xlarge' controllers."
+        },
+        if (any(analysis$peak_cpu > 80)) {
+            "High CPU utilization detected. Consider increasing CPU allocation."
+        }
+    )
+    
+    # Combine and format recommendations
+    paste(
+        c(
+            "Resource Usage Recommendations:",
+            recommendations,
+            "",
+            recommended_controller
+        ),
+        collapse = "\n"
+    )
+})
+}
+# Launch app
+shinyApp(ui = ui, server = server)
 }
