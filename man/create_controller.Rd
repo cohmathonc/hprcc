@@ -51,9 +51,23 @@ cluster setup. This functionality is especially useful in environments with vary
 resource paths and setups, simplifying job execution across the two platforms.
 }
 \examples{
-if (interactive()) {
-    create_controller("my_controller", slurm_cpus = 4, slurm_gigabytes = 8)
+# Basic controller with minimal resources
+ctrl <- create_controller("test",
+                        slurm_cpus = 2,
+                        slurm_mem_gigabytes = 8)
+
+# GPU configuration on Gemini
+if (get_cluster() == "gemini") {
+  gpu_ctrl <- create_controller("gpu_job",
+                              slurm_cpus = 4,
+                              slurm_mem_gigabytes = 60,
+                              slurm_partition = "gpu-a100")
 }
+
+# Retry controller with escalating resources
+retry_ctrl <- create_controller("retry",
+                              slurm_cpus = c(2, 4, 8),
+                              slurm_mem_gigabytes = c(8, 16, 32))
 }
 \seealso{
 \code{\link[crew.cluster]{crew_controller_slurm}} for more on SLURM controllers.

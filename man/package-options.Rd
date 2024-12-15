@@ -8,7 +8,7 @@
 The \strong{hprcc} package has a number of settings that can be configured
 via \link[base:options]{options()} or environment variables, providing
 the flexibility to use it with any containerized environment supporting
-R and \link[=targets]{{targets}} (>=1.9.1).
+R and \pkg{targets} (>=1.9.1).
 }
 \details{
 Options can be set by calling \link[base:options]{options()} \emph{before} loading the \strong{hprcc} package in
@@ -19,14 +19,14 @@ runs the \href{http://hprcc.coh.org/user-guide/rbioc/}{RStudio for Bioconductor}
 \section{Options}{
 
 \describe{
-\item{hprcc.slurm_logs}{logical. Enable SLURM job & \link{?autometric} logging. If
-\code{TRUE}, logs are saved to \link[targets:tar_path_store]{tar_path_store()}/logs. Logs capture the \code{stderr}
+\item{hprcc.slurm_logs}{logical. Enable SLURM job & \pkg{autometric} logging. If
+\code{TRUE}, logs are saved to \code{tar_path_store()}/logs. Logs capture the \code{stderr}
 and \code{stdout} of each SLURM job, and can be parsed by \code{\link[autometric:log_read]{autometric::log_read()}}. \cr
 Default: \code{FALSE}.}
 \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. \cr
 Default: \code{FALSE}}
-\item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \link[targets:tar_path_store]{tar_path_store()}/jobs; use the
-\link[=targets]{{targets}} default of \verb{$TMPDIR} if \code{FALSE}. \cr
+\item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_path_store()}/jobs; use the
+default of \verb{$TMPDIR} if \code{FALSE}. \cr
 Default: \code{FALSE}}
 \item{hprcc.slurm_account}{character. SLURM account for job submission. \cr
 Default: \verb{$USER}}

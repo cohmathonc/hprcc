@@ -1,175 +1,268 @@
 ---
-title: "Troubleshooting with SLURM and Autometric Logs"
+title: "Troubleshooting HPRCC Jobs"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Troubleshooting with SLURM and Autometric Logs}
+  %\VignetteIndexEntry{Troubleshooting HPRCC Jobs}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
 # Introduction
 
-The **hprcc** package integrates with [autometric](https://wlandau.github.io/autometric/) to provide detailed resource monitoring of your SLURM jobs. This guide shows how to enable logging and analyze job performance using both SLURM and autometric logs.
+This guide shows how to diagnose and fix common issues when running jobs on the COH HPRCC clusters. The **hprcc** package integrates with [autometric](https://wlandau.github.io/autometric/) for detailed resource monitoring, allowing you to:
 
-# Enabling Resource Logging 
+- Track memory and CPU usage over time
+- Identify resource bottlenecks 
+- Debug failed jobs
+- Optimize resource allocation
 
-Enable SLURM and autometric logging in your `_targets.R`:
+# Setting Up Job Monitoring
 
-```r
-# Turn on SLURM logging
-options(hprcc.slurm_logs = TRUE)
-```
-
-This creates two types of logs in your `_targets/logs/` directory:
-
-* `hprcc_settings_{job_id}.txt`: Job configuration and environment
-* `crew-{job_id}.out`: SLURM output and autometric resource data
-
-# Understanding Log Files
-
-## HPRCC Settings Log
-
-The `hprcc_settings_{job_id}.txt` log contains crucial configuration information about your job environment:
-
-1. **Cluster Information**
-    * Cluster name (apollo/gemini)
-    * Node hostname
-
-2. **Job Configuration**
-    * R library paths
-    * Singularity container settings
-    * SLURM partition and account
-
-3. **Resource Allocation**
-    * `SLURM_CPUS_ON_NODE`: Number of CPUs allocated
-    * `SLURM_MEM_PER_NODE`: Memory allocation in MB
-    * `CUDA_VISIBLE_DEVICES`: GPU allocation (if applicable)
-
-## Resource Usage Logs
-
-The autometric package provides tools to analyze the resource usage data in `crew-{job_id}.out`. Here's how to read and visualize a job's performance:
+Enable monitoring in your `_targets.R` file:
 
 ```r
-library(autometric)
+# Enable SLURM and autometric logging
+options(
+  hprcc.slurm_logs = TRUE,     # Write logs to _targets/logs/
+  hprcc.slurm_jobs = TRUE,     # Keep job scripts for debugging
+  hprcc.slurm_verbose = TRUE   # Show SLURM messages in console
+)
 
-# Read the log file (collects data every second by default)
-log <- log_read("_targets/logs/crew-123456.out", 
-                units_memory = "gigabytes",  # Convert to GB
-                units_time = "minutes")      # Show time in minutes
-
-# Get a quick summary
-head(log)
+# Load packages
+library(targets)
+library(hprcc)
 ```
 
-The log data frame contains key metrics:
+This logs HPRCC settings for the run and creates one log file per job in `_targets/logs/`:
 
-* `rss`: Resident Set Size (actual memory used)
-* `virtual`: Total virtual memory available
-* `cpu`: CPU usage as percentage
-* `time`: Timestamp (relative to job start)
+- `crew-{jobid}.out`: SLURM output & resource metrics  
+- `hprcc_settings_{jobid}.txt`: Environment configuration
 
-# Visualizing Resource Usage
+# Common Error Patterns
 
-Create memory usage plots to identify problems:
+## Memory Issues
+
+### Symptoms
+- Job killed by SLURM's OOM killer
+- Error: `slurmstepd: error: Exceeded job memory limit`
+- Rapid memory growth in resource plots
+- Missing results with no error message
+
+### Diagnosis
+Check memory usage pattern in logs:
 
 ```r
-# Plot memory usage over time
-log_plot(log, metric = "rss", 
-         main = "Memory Usage Over Time",
-         ylab = "Memory (GB)")
+# Read logs for memory analysis 
+logs <- read_target_logs("_targets/logs")
 
-# Plot CPU usage 
-log_plot(log, metric = "cpu",
-         main = "CPU Utilization",
-         ylab = "CPU %")
+# Plot memory usage
+plot_target_logs(logs, metric = "rss")
+
+# Look for peak memory usage
+max_mem <- max(logs$rss, na.rm = TRUE)
+print(paste("Peak memory:", round(max_mem/1e6, 1), "GB"))
 ```
 
-# Common Issues and Solutions
+### Solutions
 
-1. **Memory Spikes**
-    * Look for sudden jumps in `rss` values
-    * Consider using larger memory controller:
-    
-    ```r
-    tar_target(big_job, heavy_calculation(),
-              resources = tar_resources(
-                crew = tar_resources_crew(controller = "large_mem")
-              ))
-    ```
+1. Switch to a higher memory controller:
+```r
+# For memory-intensive tasks like scRNA-seq
+tar_target(seurat_obj,
+          CreateSeuratObject(counts) |> 
+            SCTransform() |>
+            RunPCA(),
+          resources = "large_mem")  # 800GB RAM
+```
 
-2. **CPU Underutilization** 
-    * Low `cpu` values may indicate:
-        * I/O bottlenecks
-        * Inefficient parallelization
-    * Try increasing CPU allocation:
-    
-    ```r
-    create_controller("compute_heavy",
-                     slurm_cpus = 8,
-                     slurm_mem_gigabytes = 32)
-    ```
+2. Break data into chunks:
+```r
+# Process in manageable chunks
+tar_target(chunks, split(data, ceiling(seq_len(nrow(data))/1000))),
+tar_target(processed, process_chunk(chunks),
+          pattern = map(chunks),
+          resources = "medium")  # 40GB per chunk
+```
 
-3. **Resource Usage Patterns**
-    * Steady memory growth may indicate leaks
-    * CPU spikes can show bottlenecks
-    * Very low CPU might mean I/O bound
+## CPU Utilization Issues
+
+### Symptoms
+- Jobs taking longer than expected  
+- Low CPU % in resource plots
+- High system time vs user time
+
+### Diagnosis
+Check CPU patterns:
+
+```r
+# Plot CPU usage over time
+plot_target_logs(logs, metric = "cpu")
+
+# Calculate average CPU utilization
+mean_cpu <- mean(logs$cpu, na.rm = TRUE)
+print(paste("Mean CPU usage:", round(mean_cpu, 1), "%"))
+```
+
+Signs of poor CPU utilization:
+- CPU usage < 50% of allocated cores
+- Large gaps between CPU spikes
+- High system time relative to user time
+
+### Solutions
+
+1. Match CPU allocation to usage:
+```r
+# CPU-bound task
+tar_target(parallel_task,
+          mclapply(data, heavy_computation, mc.cores = 4),
+          resources = "medium")  # 4 cores
+
+# I/O bound task 
+tar_target(io_task, 
+          read_big_file(path),
+          resources = "tiny")  # 2 cores is plenty
+```
+
+2. Use appropriate parallelization:
+```r 
+# Bad - nested parallelism
+tar_target(nested_parallel,
+          parallel::mclapply(files, function(f) {
+            BiocParallel::bplapply(read_data(f), process)
+          }))
+
+# Good - single level of parallelism  
+tar_target(files, list.files(pattern = "*.bam")),
+tar_target(processed,
+          process_file(files),
+          pattern = map(files),
+          resources = "medium")
+```
+
+## Container/Environment Issues
+
+### Symptoms
+- Missing R packages
+- Library load errors
+- Inconsistent behavior between Apollo/Gemini
+
+### Diagnosis
+Check environment config:
+
+```r
+# Print detailed environment info
+log_hprcc_settings()
+
+# Check library paths
+.libPaths()
+```
+
+Examine `hprcc_settings_{jobid}.txt` for:
+- R library paths
+- Container bind mounts
+- Environment variables
+
+### Solutions
+
+1. Set correct library paths:
+```r
+options(
+  hprcc.r_libs_user = "/path/to/my/R/libs",
+  hprcc.r_libs_site = "/shared/R/libs"
+)
+```
+
+2. Add container bind paths:
+```r
+options(hprcc.singularity_bind_dirs = 
+        "/data,/scratch,/labs,/ref_genome")
+```
+
+3. Use consistent container:
+```r
+options(
+  hprcc.singularity_container = 
+    "/opt/singularity-images/rbioc/vscode-rbioc_3.19.sif"
+)
+```
+
+# Resource Usage Examples
+
+Here are typical resource patterns for common bioinformatics tasks:
+
+## Single Cell RNA-seq
+
+```
+Memory:
+- SCTransform: Rapid growth to ~10X input size
+- PCA/UMAP: Moderate, stable usage
+- Clustering: Spiky with ~2-3X baseline
+
+CPU:
+- SCTransform: High (>80%) sustained
+- PCA: Bursts of 100% 
+- Clustering: Variable 20-100%
+```
+
+## Bulk RNA-seq
+
+```
+Memory:
+- Alignment: Linear growth, then plateau
+- Feature counting: Stable, ~2X BAM size
+- DESeq2: ~5X count matrix size
+
+CPU:
+- Alignment: Sustained high (>90%)
+- Counting: Moderate (40-60%)
+- DESeq2: Variable, spiky
+```
 
 # Best Practices
 
-1. **Check Both Log Types**
-    * Review `hprcc_settings` for correct configuration
-    * Verify resource allocations match expectations
-    * Use autometric logs to track actual usage
+## Resource Monitoring
+- Always enable logging `options(hprcc.slurm_logs = TRUE)`
+- Review past job performance with `explore_logs()`
+- Monitor memory growth patterns
+- Look for CPU bottlenecks
 
-2. **Regular Monitoring**
-    * Check memory growth patterns
-    * Watch for unexpected spikes
-    * Note peak resource usage
+## Resource Allocation
+- Start with smallest sufficient controller
+- Use retry controller for unpredictable jobs
+- Match CPU count to actual parallelization
+- Add 20% buffer to observed memory usage
 
-3. **Keep Logs Organized**
-    * Use meaningful job names
-    * Set `hprcc.slurm_jobs = TRUE` to preserve job scripts
-    * Review logs promptly after failures
+## Pipeline Design
+- Break large jobs into smaller chunks
+- Avoid nested parallelization
+- Cache intermediate results
+- Use appropriate storage formats
 
-4. **Resource Planning**
-    * Use log data to size future jobs
-    * Plan for peak memory needs
-    * Match CPU allocation to workload
+## Debugging
+1. Enable verbose logging
+2. Check both SLURM and R errors
+3. Reproduce locally if possible
+4. Test with smaller dataset
+5. Monitor resource usage
 
-# Example: Analyzing Job Performance
+## Container Management
+- Use consistent containers
+- Bind required directories
+- Set correct library paths
+- Keep environments minimal
 
-Here's a complete example of analyzing both configuration and resource usage:
+# Resource Sizing Guide
 
-```r
-# First, check job configuration
-settings_file <- "_targets/logs/hprcc_settings_123456.txt"
-cat(readLines(settings_file), sep = "\n")
+| Task Type | Example | Recommended Controller | Notes |
+|-----------|---------|----------------------|--------|
+| Data Loading | Reading BAM/CSV | `tiny` | I/O bound, low CPU |
+| QC/Processing | FastQC, Trimming | `small` | Moderate CPU/mem |
+| Alignment | STAR, BWA | `large` | CPU intensive |
+| scRNA-seq | Seurat | `large_mem` | Memory hungry |
+| Deep Learning | Training | `gpu_medium` | GPU required |
 
-# Then analyze resource usage
-# Read the logs
-log <- log_read("_targets/logs/crew-123456.out")
+# Getting Help
 
-# Check overall memory usage
-log_plot(log, metric = "rss")
-
-# Look at CPU utilization
-log_plot(log, metric = "cpu")
-
-# Get summary statistics
-summary(log$rss)    # Memory stats
-summary(log$cpu)    # CPU stats
-
-# Find peak memory usage
-max(log$rss)
-
-# Check memory usage distribution
-hist(log$rss, breaks = 50, 
-     main = "Memory Usage Distribution",
-     xlab = "Memory (GB)")
-```
-
-This helps identify:
-
-* Peak resource usage
-* Resource usage patterns
-* Whether to adjust controller resources
+- Report issues & ask questions : [GitHub Issues](https://github.com/cohmathonc/hprcc/issues)
+- Check logs: `explore_logs()`
+- Review documentation: `help(package = "hprcc")`

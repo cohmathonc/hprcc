@@ -52,8 +52,32 @@ tar_script({
 
 tar_make()
 ```
+Or a memory-Intensive single cell analysis:
+
+```r
+# Create a pipeline for Seurat analysis
+tar_script({
+  library(hprcc)
+  library(Seurat)
+  
+  list(
+    # Load data - small controller is fine
+    tar_target(counts, read_h5("data/counts.h5"),
+              resources = "small"),
+              
+    # Heavy processing needs more memory
+    tar_target(seurat_obj, 
+              CreateSeuratObject(counts) |> 
+                SCTransform() |>
+                RunPCA() |>
+                RunUMAP(),
+              resources = "large_mem")
+  )
+})
+```
 
 When you load **hprcc**, it automatically configures {targets} with SLURM-friendly settings:
+
 - Uses the fast "qs" storage format instead of "rds"
 - Minimizes network traffic by using worker-based storage/retrieval 
 - Sets up node controllers for different job sizes:
@@ -75,14 +99,17 @@ On the Gemini cluster, GPU nodes are also available:
 **hprcc** includes some handy utilities for working with the cluster:
 
 ```
-# Initialize multisession computation based on your SLURM allocation
+# Initialize {future} multisession computation based on your SLURM allocation
 init_multisession()
 
-# Check your current SLURM resource allocation
+# Check your current SLURM resource allocation, or from within a job
 slurm_allocation()
 
 # Enable detailed SLURM logging (writes to _targets/logs/)
 options(hprcc.slurm_logs = TRUE)
+
+# Shiny app to evaluate cluster resource usage (when hprcc.slurm_logs = TRUE)
+explore_logs()
 ```
 
 # Configuration 
