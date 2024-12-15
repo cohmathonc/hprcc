@@ -2,7 +2,7 @@
 % Please edit documentation in R/functions.R
 \name{get_cluster}
 \alias{get_cluster}
-\title{Determine Cluster Name Based on Hostname}
+\title{Determine Cluster Based on Hostname}
 \usage{
 get_cluster()
 }

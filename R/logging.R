@@ -26,8 +26,7 @@
 #'
 #' @seealso
 #' [targets::tar_path_store()] for understanding the log file location
-#'
-#' @export
+#' @keywords internal
 log_hprcc_settings <- function() {
     # Only proceed if logging is enabled
     if (!isTRUE(getOption("hprcc.slurm_logs", FALSE))) {

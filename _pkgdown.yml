@@ -17,33 +17,38 @@ navbar:
 deploy:
   install_metadata: true
 reference:
-  - title: "Preconfigured SLURM Resources"
-    desc: "Preconfigured resources for SLURM job execution."
-    contents:
-      - tiny
-      - small
-      - medium
-      - large
-      - large_mem
-      - xlarge
-      - huge
-      - gpu_medium
-      - gpu_large
+- title: "Getting Started"
+  desc: "Essential functions for basic usage"
+  contents:
+  - create_controller
+  - get_cluster
+  - init_multisession
 
-  - title: "SLURM Controllers and Utilities"
-    desc: "Tools for setting up and managing SLURM job controllers."
-    contents:
-      - create_controller
-      - get_cluster
-      - init_multisession
-      - slurm_allocation
+- title: "Resource Management"
+  desc: "Pre-configured SLURM resource profiles"
+  contents:
+  - starts_with("tiny")
+  - starts_with("small")
+  - starts_with("medium") 
+  - starts_with("large")
+  - starts_with("gpu")
 
-  - title: "Logging and Parameters"
-    desc: "Functions for logging and parameter management."
-    contents:
-      - log_hprcc_settings
+- title: "Monitoring & Analysis"
+  desc: "Tools for monitoring job performance"
+  contents:
+  - read_targets_logs
+  - plot_targets_logs
+  - explore_logs
 
-  - title: "Package Options"
-    desc: "Customize package behavior via options."
-    contents:
-      - package-options
+- title: "Configuration"
+  desc: "Package configuration functions"
+  contents:
+  - package-options
+  - slurm_allocation
+
+- title: "Internal Functions"
+  desc: "Internal helper functions"
+  contents: 
+    - clean_phase_name
+    - create_metric_plot
+    - log_hprcc_settings
