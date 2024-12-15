@@ -361,76 +361,81 @@ explore_logs <- function(path = NULL) {
     
     # Resource recommendations
     output$recommendations <- renderText({
-    data <- filtered_data()
-    if (nrow(data) == 0) return("No data available for recommendations")
-    
-    # Retrieve controllers
-    controllers <- autometric_hprcc_controllers()
-    
-    analysis <- data %>%
+      data <- filtered_data()
+      if (nrow(data) == 0) return("No data available for recommendations")
+      
+      controllers <- autometric_hprcc_controllers()
+      worker_name <- unique(data$name)[1]
+      current_controller <- regmatches(worker_name, regexec("crew_worker_([^_]+)", worker_name))[[1]][2]
+      
+      analysis <- data %>%
         group_by(slurm_job_id) %>%
         summarise(
-            peak_mem_gb = max(resident)/1024,
-            median_mem_gb = median(resident)/1024,
-            peak_cpu = max(cpu),
-            median_cpu = median(cpu),
-            duration_min = diff(range(time))/60,
-            .groups = "drop"
+          peak_mem_gb = max(resident)/1024,
+          median_mem_gb = median(resident)/1024,
+          peak_cpu = max(cpu),
+          median_cpu = median(cpu),
+          duration_min = diff(range(time))/60,
+          .groups = "drop"
         )
-    
-    # Initialize recommendations list
-    recommendations <- character()
-    
-    # Determine recommended controller
-    recommended_controller <- tryCatch({
-        # Find controllers that meet memory and CPU requirements
-        appropriate_controllers <- Filter(function(params) {
-            params$memory_gigabytes >= max(analysis$peak_mem_gb) &&
-            params$cpus >= median(analysis$peak_cpu)
-        }, controllers)
-        
-        # If suitable controllers found, choose the most minimal one
-        if (length(appropriate_controllers) > 0) {
-            min_controller <- appropriate_controllers[[
-                which.min(sapply(appropriate_controllers, function(x) x$memory_gigabytes))
-            ]]
-            
-            sprintf(
-                "Recommended Controller: %s (CPUs: %d, Memory: %.1f GB, Walltime: %d min)", 
-                min_controller$name, 
-                min_controller$cpus, 
-                min_controller$memory_gigabytes, 
-                min_controller$walltime_minutes
-            )
-        } else {
-            "Could not recommend a suitable controller. Consider 'large_mem' or retry with adjusted resources."
+      
+      # Required resources - memory in GB, CPU in cores, time in minutes
+      required <- list(
+        memory = max(analysis$peak_mem_gb),
+        cpu = max(1, ceiling(max(analysis$peak_cpu) / 100 * 8)), # Convert % to cores
+        time = max(analysis$duration_min)
+      )
+      
+      # Find smallest controller meeting all requirements
+      optimal_controller <- controllers[[1]]
+      for (controller in controllers) {
+        if (controller$memory_gigabytes >= required$memory && 
+            controller$cpus >= required$cpu &&
+            controller$walltime_minutes >= required$time) {
+          optimal_controller <- controller
+          break
         }
-    }, error = function(e) {
-        "Error determining recommended controller."
-    })
-    
-    # Add specific recommendations based on resource usage
-    recommendations <- c(
-        if (any(analysis$peak_mem_gb > 200)) {
-            "High memory usage detected. Consider using 'large_mem' or 'xlarge' controllers."
-        },
-        if (any(analysis$peak_cpu > 80)) {
-            "High CPU utilization detected. Consider increasing CPU allocation."
-        }
-    )
-    
-    # Combine and format recommendations
-    paste(
+      }
+      
+      # Build analysis text
+      controller_text <- sprintf(
+        "\nCurrent Controller: %s\nPeak Usage:\n- Memory: %.1f GB\n- CPU: %.1f cores\n- Time: %.1f minutes\n",
+        current_controller, required$memory, required$cpu, required$time
+      )
+      
+      if (optimal_controller$name != current_controller) {
+        controller_text <- paste0(
+          controller_text,
+          sprintf("\nRecommended Controller: %s\nReason: Minimum controller meeting requirements for:\n", 
+                  optimal_controller$name),
+          sprintf("- Memory: %.1f GB needed\n", required$memory),
+          sprintf("- CPU: %d cores needed\n", required$cpu),
+          sprintf("- Time: %.1f minutes needed", required$time)
+        )
+      } else {
+        controller_text <- paste0(controller_text, "\nCurrent controller is appropriate")
+      }
+      
+      # Resource-specific warnings
+      warnings <- c(
+        if (required$memory > 0.9 * optimal_controller$memory_gigabytes) 
+          "WARNING: Memory usage close to limit",
+        if (required$time > 0.9 * optimal_controller$walltime_minutes) 
+          "WARNING: Execution time close to limit"
+      )
+      
+      paste(
         c(
-            "Resource Usage Recommendations:",
-            recommendations,
-            "",
-            recommended_controller
+          "Resource Usage Analysis:",
+          sprintf("Phase: %s", input$phase),
+          controller_text,
+          if (length(warnings) > 0) c("", "Warnings:", warnings),
+          ""
         ),
         collapse = "\n"
-    )
-})
-}
+      )
+    })
+  }
 # Launch app
 shinyApp(ui = ui, server = server)
 }
