@@ -11,7 +11,7 @@
 #' @return A data frame combining all log files with additional columns:
 #' \itemize{
 #'   \item file_name: Source log file name
-#'   \item slurm_job_id: SLURM job ID extracted from crew-{jobid}.out filename 
+#'   \item slurm_job_id: SLURM job ID extracted from crew-\{jobid\}.out filename 
 #'   \item ... all standard autometric log columns
 #' }
 #' @export
@@ -20,10 +20,10 @@
 #'
 #' @examples
 #' \dontrun{
-#' logs <- read_target_logs("_targets/logs")
+#' logs <- read_targets_logs("_targets/logs")
 #' log_plot(logs, metric = "rss")
 #' }
-read_target_logs <- function(path = NULL, 
+read_targets_logs <- function(path = NULL, 
                            pattern = NULL,
                            units_cpu = "percentage",
                            units_memory = "megabytes", 
@@ -89,7 +89,7 @@ read_target_logs <- function(path = NULL,
 
 #' Plot combined metrics from multiple log files
 #'
-#' @param logs Data frame returned by read_target_logs()
+#' @param logs Data frame returned by read_targets_logs()
 #' @param metric Character string with the name of metric to plot
 #' @param job_ids Optional character vector of SLURM job IDs to include
 #' @param ... Additional arguments passed to autometric::log_plot()
@@ -99,10 +99,13 @@ read_target_logs <- function(path = NULL,
 #'
 #' @examples
 #' \dontrun{
-#' logs <- read_target_logs()
-#' plot_target_logs(logs, metric = "rss")
+#' logs <- read_targets_logs()
+#' plot_targets_logs(logs, metric = "rss")
 #' }
-plot_target_logs <- function(logs, metric = "resident", job_ids = NULL, ...) {
+#' @importFrom grDevices rainbow
+#' @importFrom graphics legend lines plot.new title
+#' @importFrom stats median quantile
+plot_targets_logs <- function(logs, metric = "resident", job_ids = NULL, ...) {
   
   if (!is.null(job_ids)) {
     logs <- logs[logs$slurm_job_id %in% job_ids, ]

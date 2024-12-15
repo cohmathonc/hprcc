@@ -38,6 +38,18 @@ This logs HPRCC settings for the run and creates one log file per job in `_targe
 - `crew-{jobid}.out`: SLURM output & resource metrics  
 - `hprcc_settings_{jobid}.txt`: Environment configuration
 
+# Explore Job Logs
+
+Use `explore_logs()` to review past job performance. Logs are read from `_targets/logs/` and 
+a Shiny app provides interactive plots for memory, CPU usage and wall time analysis;
+resource usage statistics by job; analysis of usage patterns; and controller recommendations
+based on observed resource requirements.
+
+```r
+# Explore logs
+explore_logs()
+```
+
 # Common Error Patterns
 
 ## Memory Issues
@@ -53,10 +65,10 @@ Check memory usage pattern in logs:
 
 ```r
 # Read logs for memory analysis 
-logs <- read_target_logs("_targets/logs")
+logs <- read_targets_logs("_targets/logs")
 
 # Plot memory usage
-plot_target_logs(logs, metric = "rss")
+plot_targets_logs(logs, metric = "rss")
 
 # Look for peak memory usage
 max_mem <- max(logs$rss, na.rm = TRUE)
@@ -96,7 +108,7 @@ Check CPU patterns:
 
 ```r
 # Plot CPU usage over time
-plot_target_logs(logs, metric = "cpu")
+plot_targets_logs(logs, metric = "cpu")
 
 # Calculate average CPU utilization
 mean_cpu <- mean(logs$cpu, na.rm = TRUE)

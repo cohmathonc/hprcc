@@ -36,8 +36,8 @@ reference:
 - title: "Monitoring & Analysis"
   desc: "Tools for monitoring job performance"
   contents:
-  - read_target_logs
-  - plot_target_logs
+  - read_targets_logs
+  - plot_targets_logs
   - explore_logs
 
 - title: "Configuration"

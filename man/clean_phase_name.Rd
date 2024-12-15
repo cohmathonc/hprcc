@@ -15,3 +15,4 @@ Character vector of cleaned phase names
 \description{
 Remove hash suffix from phase name
 }
+\keyword{internal}

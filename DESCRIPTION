@@ -13,10 +13,13 @@ Imports:
     autometric,
     crew,
     crew.cluster (>= 0.3.3),
+    dplyr,
     future,
+    ggplot2,
     glue,
     here,
     qs2,
+    shiny,
     stringr,
     targets (>= 1.9.1)
 Suggests: 

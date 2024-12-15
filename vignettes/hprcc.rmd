@@ -91,6 +91,7 @@ When you load **hprcc**, it automatically configures {targets} with SLURM-friend
   - `retry`: Automatically retries failed jobs with increasing resources
 
 On the Gemini cluster, GPU nodes are also available:
+
   - `gpu_medium`: 4 cores, 60GB RAM, 2 hours max on A100/V100 GPUs
   - `gpu_large`: 8 cores, 120GB RAM, 4 hours max on A100/V100 GPUs
 

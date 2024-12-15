@@ -5,14 +5,13 @@ system <- NULL
 Sys.info <- NULL
 Sys.getenv <- NULL
 dir.create <- NULL
-write <- NULL
-message <- NULL
 
 # ------------------------------------------------------------------------------
-#' Initialize Multisession Computation with Future
+#' Initialize Multisession Computation
 #'
-#' Configures the \{future\} package for multisession computation, adapting resource
-#' settings based on the SLURM job's allocation or system resources.
+#' Configures [future and futureverse](https://www.futureverse.org) packages for multisession 
+#' computation, adapting resource settings based on the SLURM job's allocation or
+#' system resources.
 #'
 #' @details
 #' In a SLURM environment, it sets the number of workers and memory allocation
@@ -20,7 +19,7 @@ message <- NULL
 #' and standard multisession settings.
 #'
 #' @return
-#' Invisibly returns the result of \code{future::plan()}.
+#' Invisibly returns the result of [future::plan()].
 #'
 #' @examples
 #' if (interactive()) {

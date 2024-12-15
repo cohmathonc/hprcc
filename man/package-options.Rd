@@ -8,7 +8,7 @@
 The \strong{hprcc} package has a number of settings that can be configured
 via \link[base:options]{options()} or environment variables, providing
 the flexibility to use it with any containerized environment supporting
-R and \pkg{targets} (>=1.9.1).
+R and \link[targets:targets-package]{targets} (>=1.9.1).
 }
 \details{
 Options can be set by calling \link[base:options]{options()} \emph{before} loading the \strong{hprcc} package in
@@ -19,20 +19,20 @@ runs the \href{http://hprcc.coh.org/user-guide/rbioc/}{RStudio for Bioconductor}
 \section{Options}{
 
 \describe{
-\item{hprcc.slurm_logs}{logical. Enable SLURM job & \pkg{autometric} logging. If
-\code{TRUE}, logs are saved to \code{tar_path_store()}/logs. Logs capture the \code{stderr}
+\item{hprcc.slurm_logs}{logical. Enable SLURM job & \href{https://wlandau.github.io/autometric/index.html}{autometric}
+logging. If \code{TRUE}, logs are saved to \verb{logs/} in \code{\link[targets:tar_path_store]{targets::tar_path_store()}}. Logs capture the \code{stderr}
 and \code{stdout} of each SLURM job, and can be parsed by \code{\link[autometric:log_read]{autometric::log_read()}}. \cr
 Default: \code{FALSE}.}
 \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. \cr
 Default: \code{FALSE}}
-\item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_path_store()}/jobs; use the
+\item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \verb{jobs/ in }\code{\link[targets:tar_path_store]{targets::tar_path_store()}}; use the
 default of \verb{$TMPDIR} if \code{FALSE}. \cr
 Default: \code{FALSE}}
 \item{hprcc.slurm_account}{character. SLURM account for job submission. \cr
 Default: \verb{$USER}}
 \item{hprcc.r_libs_user}{Path to user R libraries. \cr
 Environment: \verb{$R_LIBS_USER} \cr
-Default: User's R library path or \verb{~/R/x86_64-pc-linux-gnu-library/\%V}}
+Default: \code{"~/R/x86_64-pc-linux-gnu-library/\%V"}}
 \item{hprcc.r_libs_site}{Site-specific library path. \cr
 Environment: \verb{$R_LIBS_SITE} \cr
 Apollo default: \code{"/opt/singularity-images/rbioc/rlibs/bioc-$BIOCONDUCTOR_VERSION"} \cr
@@ -49,7 +49,7 @@ Gemini default: \code{"/packages/singularity/shared_cache/rbioc/vscode-rbioc_$BI
 Environment: \verb{$SINGULARITY_BIND} \cr
 Apollo default: \code{"/labs,/opt,/ref_genome,/run"} \cr
 Gemini default: \code{"/packages,/run,/ref_genomes,/scratch"}}
-\item{hprcc.default_partition}{Default SLURM partition. Automatically detected using \verb{scontrol show partition}. \cr
+\item{hprcc.default_partition}{Default SLURM partition. Automatically detected using \code{"scontrol show partition"}. \cr
 Default: Dynamically retrieved default partition from SLURM configuration.}
 }
 }

@@ -1,11 +1,14 @@
-#' Remove hash suffix from phase name
-#' 
+#' @import dplyr
+#' @import ggplot2
+#' @import shiny
+#' @importFrom stats density
+NULL
+
 #' Remove hash suffix from phase name
 #' 
 #' @param phase Character vector of phase names with IDs
 #' @return Character vector of cleaned phase names
 #' @keywords internal
-#' @noRd
 clean_phase_name <- function(phase) {
     # Remove hash suffix to group tasks by phase
     sub("_[0-9a-f]{16}$", "", phase)
@@ -67,30 +70,35 @@ autometric_hprcc_controllers <- function() {
 #' @param metric Column name to plot
 #' @param y_label Y-axis label
 #' @param normalize_time Whether to normalize time axis
+#' @import ggplot2
+#' @importFrom dplyr mutate group_by ungroup summarise
 #' @keywords internal
+utils::globalVariables(c(
+  "slurm_job_id", "time", "time_bin", "min_val", "max_val", "mean_val"
+))
+
 create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
   # Scale time axis
   if(normalize_time) {
-    data <- data %>%
-      group_by(slurm_job_id) %>%
+    data <- data |>
+      group_by(slurm_job_id) |>
       mutate(
         time = (time - min(time)) / (max(time) - min(time)) * 100
-      ) %>%
+      ) |>
       ungroup()
   } else {
-    data <- data %>%
+    data <- data |>
       mutate(time = time/60)  # Convert to minutes
   }
   
   # Calculate bin statistics
-  # Calculate bin statistics
-  stats <- data %>%
+  stats <- data |>
     mutate(
       time_bin = cut(time, 
                     breaks = 100, 
                     labels = FALSE)
-    ) %>%
-    group_by(time_bin) %>%
+    ) |>
+    group_by(time_bin) |>
     summarise(
       time = mean(time),
       mean_val = mean(.data[[metric]], na.rm = TRUE),
@@ -99,7 +107,6 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
       .groups = "drop"
     )
   
-  # Build plot
   # Build plot
   ggplot(stats, aes(x = time)) +
     geom_ribbon(aes(ymin = min_val, 
@@ -118,8 +125,8 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
 #' Run Shiny app to explore autometric log data
 #'
 #' Launch an interactive Shiny application for visualizing and analyzing resource usage logs created by 
-#' the autometric package. The app provides plots and statistics for memory usage, CPU utilization, 
-#' and task completion times, and resource request suggestions.
+#' the [autometric](https://wlandau.github.io/autometric/) package. The app provides plots and statistics
+#' for memory usage, CPU utilization, and task completion times, and resource request suggestions.
 #'
 #' @param path Path to _targets/logs directory. If NULL, will attempt to find logs in default location
 #'
@@ -139,26 +146,29 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
 #' }
 #'
 #' @export
+utils::globalVariables(c(
+  "slurm_job_id", "time", "time_bin", "min_val", "max_val", 
+  "mean_val", "phase", "completion_time", "resident", "cpu",
+  "walltime"
+))
+
 explore_logs <- function(path = NULL) {
   # Load log data
-  # Load log data
-  logs <- read_target_logs(path)
+  logs <- read_targets_logs(path)
   
   # Add clean phase names as a column
-  logs <- logs %>%
+  logs <- logs |>
     mutate(clean_phase_name = clean_phase_name(phase))
   
   # Get unique cleaned phase names
   phases <- sort(unique(logs$clean_phase_name))
   
   # Add wall time
-  # Add wall time
-  logs <- logs %>%
-    group_by(slurm_job_id) %>%
-    mutate(walltime = time - min(time)) %>%
+  logs <- logs |>
+    group_by(slurm_job_id) |>
+    mutate(walltime = time - min(time)) |>
     ungroup()
   
-  # Define UI layout
   # Define UI layout
   ui <- fluidPage(
     titlePanel("Resource Usage Explorer"),
@@ -217,8 +227,8 @@ explore_logs <- function(path = NULL) {
             h4("Resource Usage Patterns"),
             verbatimTextOutput("analysis_text"),
             h4("Recommendations"),
-            verbatimTextOutput("recommendations")
-          )
+            uiOutput("recommendations")  # Changed from verbatimTextOutput
+            )
         )
       )
     )
@@ -227,17 +237,15 @@ explore_logs <- function(path = NULL) {
   # Define server logic
   server <- function(input, output, session) {
     # Filter data reactively
-    # Filter data reactively
     filtered_data <- reactive({
       req(input$phase)
       
-      logs %>%
+      logs |>
         filter(clean_phase_name == input$phase,
                time >= input$time_window[1] * 60,
                time <= input$time_window[2] * 60)
     })
     
-    # Update time range slider
     # Update time range slider
     observe({
       req(input$phase)
@@ -251,34 +259,28 @@ explore_logs <- function(path = NULL) {
     })
     
     # Memory plot
-    # Memory plot
     output$memory_plot <- renderPlot({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
       create_metric_plot(data, 
-      create_metric_plot(data, 
                      "resident", 
                      "Memory Usage (GB)",
                      input$normalize_time) +
         scale_y_continuous(labels = function(x) x/1024)
-        scale_y_continuous(labels = function(x) x/1024)
     })
     
-    # CPU plot
     # CPU plot
     output$cpu_plot <- renderPlot({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
       create_metric_plot(data, 
-      create_metric_plot(data, 
                      "cpu", 
                      "CPU Usage (%)",
                      input$normalize_time)
     })
 
-    # Wall time distribution plot
     # Wall time distribution plot
     output$wall_plot <- renderPlot({
       data <- filtered_data()
@@ -288,8 +290,8 @@ explore_logs <- function(path = NULL) {
         return()
       }
       
-      completion_times <- data %>%
-        group_by(slurm_job_id) %>%
+      completion_times <- data |>
+        group_by(slurm_job_id) |>
         summarise(completion_time = if(n() > 1) { diff(range(time, na.rm = TRUE))/60 } else { diff(range(time, na.rm = TRUE))/60 })
       
       if(nrow(completion_times) < 2) {
@@ -299,7 +301,7 @@ explore_logs <- function(path = NULL) {
       }
       
       ggplot(completion_times, aes(x = completion_time)) +
-        geom_histogram(aes(y = ..density..), 
+        geom_histogram(aes(y = after_stat(density)), 
                       fill = "#4B7BE5", 
                       alpha = 0.6, 
                       bins = 30) +
@@ -311,65 +313,61 @@ explore_logs <- function(path = NULL) {
     })
     
     # Memory statistics
-    # Memory statistics
     output$memory_stats <- renderTable({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
-      data %>%
-        group_by(slurm_job_id) %>%
+      data |>
+        group_by(slurm_job_id) |>
         summarise(
-          "Min (GB)" = min(resident/1024) %>% round(1),
-          "Median (GB)" = median(resident/1024) %>% round(1),
-          "Max (GB)" = max(resident/1024) %>% round(1),
-          "95th Percentile (GB)" = quantile(resident/1024, 0.95) %>% round(1),
-          "Duration (min)" = diff(range(time))/60 %>% round(1),
+          "Min (GB)" = min(resident/1024) |> round(1),
+          "Median (GB)" = median(resident/1024) |> round(1),
+          "Max (GB)" = max(resident/1024) |> round(1),
+          "95th Percentile (GB)" = quantile(resident/1024, 0.95) |> round(1),
+          "Duration (min)" = diff(range(time))/60 |> round(1),
           .groups = "drop"
         )
     })
     
-    # CPU statistics
     # CPU statistics
     output$cpu_stats <- renderTable({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
-      data %>%
-        group_by(slurm_job_id) %>%
+      data |>
+        group_by(slurm_job_id) |>
         summarise(
-          "Median (%)" = median(cpu) %>% round(1),
-          "Max (%)" = max(cpu) %>% round(1),
-          "95th Percentile (%)" = quantile(cpu, 0.95) %>% round(1),
-          "High CPU Time (%)" = (sum(cpu > 90) / n() * 100) %>% round(1),
-          "Duration (min)" = diff(range(time))/60 %>% round(1),
+          "Median (%)" = median(cpu) |> round(1),
+          "Max (%)" = max(cpu) |> round(1),
+          "95th Percentile (%)" = quantile(cpu, 0.95) |> round(1),
+          "High CPU Time (%)" = (sum(cpu > 90) / n() * 100) |> round(1),
+          "Duration (min)" = diff(range(time))/60 |> round(1),
           .groups = "drop"
         )
     })
 
     # Wall time statistics
-    # Wall time statistics
     output$wall_stats <- renderTable({
       data <- filtered_data()
       if(nrow(data) == 0) return(NULL)
       
-      data %>%
-        group_by(slurm_job_id) %>%
+      data |>
+        group_by(slurm_job_id) |>
         summarise(
-          "Duration (min)" = if (n() > 1) { diff(range(time, na.rm = TRUE))/60 %>% round(1) } else { NA_real_ },
-          "Peak Rate (min/min)" = if (n() > 1) { max(diff(walltime/60), na.rm = TRUE) %>% round(2) } else { NA_real_ },
-          "Average Rate (min/min)" = if (n() > 1) { mean(diff(walltime/60), na.rm = TRUE) %>% round(2) } else { NA_real_ },
+          "Duration (min)" = if (n() > 1) { diff(range(time, na.rm = TRUE))/60 |> round(1) } else { NA_real_ },
+          "Peak Rate (min/min)" = if (n() > 1) { max(diff(walltime/60), na.rm = TRUE) |> round(2) } else { NA_real_ },
+          "Average Rate (min/min)" = if (n() > 1) { mean(diff(walltime/60), na.rm = TRUE) |> round(2) } else { NA_real_ },
           .groups = "drop"
         )
     })
     
     # Analysis summary
-    # Analysis summary
     output$analysis_text <- renderText({
       data <- filtered_data()
       if(nrow(data) == 0) return("No data available for analysis")
       
-      analysis <- data %>%
-        group_by(slurm_job_id) %>%
+      analysis <- data |>
+        group_by(slurm_job_id) |>
         summarise(
           peak_mem_gb = max(resident)/1024,
           median_mem_gb = median(resident)/1024,
@@ -384,98 +382,142 @@ explore_logs <- function(path = NULL) {
         "Resource Usage Summary:\n",
         sprintf("Duration: %.1f minutes (avg)\n", mean(analysis$duration_min)),
         sprintf("Total jobs: %d\n\n", nrow(analysis)),
-        sprintf("Duration: %.1f minutes (avg)\n", mean(analysis$duration_min)),
-        sprintf("Total jobs: %d\n\n", nrow(analysis)),
         "Memory Usage:\n",
-        sprintf("Peak memory: %.1f GB\n", max(analysis$peak_mem_gb)),
-        sprintf("Average memory: %.1f GB\n\n", mean(analysis$median_mem_gb)),
         sprintf("Peak memory: %.1f GB\n", max(analysis$peak_mem_gb)),
         sprintf("Average memory: %.1f GB\n\n", mean(analysis$median_mem_gb)),
         "CPU Usage:\n",
         sprintf("Peak CPU: %.1f%%\n", max(analysis$peak_cpu)),
         sprintf("Average CPU: %.1f%%", mean(analysis$median_cpu))
-        sprintf("Peak CPU: %.1f%%\n", max(analysis$peak_cpu)),
-        sprintf("Average CPU: %.1f%%", mean(analysis$median_cpu))
       )
     })
     
-    # Resource recommendations
-    # Resource recommendations
-    output$recommendations <- renderText({
-      data <- filtered_data()
-      if (nrow(data) == 0) return("No data available for recommendations")
-      
-      controllers <- autometric_hprcc_controllers()
-      worker_name <- unique(data$name)[1]
-      current_controller <- regmatches(worker_name, regexec("crew_worker_([^_]+)", worker_name))[[1]][2]
-      
-      analysis <- data %>%
-        group_by(slurm_job_id) %>%
-        summarise(
-          peak_mem_gb = max(resident)/1024,
-          median_mem_gb = median(resident)/1024,
-          peak_cpu = max(cpu),
-          median_cpu = median(cpu),
-          duration_min = diff(range(time))/60,
-          .groups = "drop"
+# Resource recommendations
+output$recommendations <- renderUI({
+  data <- filtered_data()
+  if (nrow(data) == 0) {
+    return(tags$p("No data available for recommendations"))
+  }
+  
+  controllers <- autometric_hprcc_controllers()
+  worker_name <- unique(data$name)[1]
+  current_controller_name <- regmatches(worker_name, regexec("crew_worker_([^_]+)", worker_name))[[1]][2]
+  
+  # Find current controller specs
+  current_controller <- NULL
+  for (controller in controllers) {
+    if (controller$name == current_controller_name) {
+      current_controller <- controller
+      break
+    }
+  }
+  
+  if (is.null(current_controller)) {
+    return(tags$p("Error: Could not determine current controller"))
+  }
+  
+  analysis <- data |>
+    group_by(slurm_job_id) |>
+    summarise(
+      peak_mem_gb = max(resident)/1024,
+      median_mem_gb = median(resident)/1024,
+      peak_cpu = max(cpu),
+      median_cpu = median(cpu),
+      duration_min = diff(range(time))/60,
+      .groups = "drop"
+    )
+  
+  # Required resources
+  required <- list(
+    memory = max(analysis$peak_mem_gb),
+    cpu = max(1, ceiling(max(analysis$peak_cpu) / 100 * 8)),
+    time = max(analysis$duration_min)
+  )
+  
+  # Find optimal controller
+  optimal_controller <- controllers[[1]]
+  for (controller in controllers) {
+    if (controller$memory_gigabytes >= required$memory && 
+        controller$cpus >= required$cpu &&
+        controller$walltime_minutes >= required$time) {
+      optimal_controller <- controller
+      break
+    }
+  }
+  
+  # Resource warnings
+  warnings <- list()
+  if (required$memory > 0.9 * current_controller$memory_gigabytes) {
+    warnings <- c(warnings, "Memory usage close to limit")
+  }
+  if (required$time > 0.9 * current_controller$walltime_minutes) {
+    warnings <- c(warnings, "Execution time close to limit")
+  }
+  
+  # Build HTML output
+  tagList(
+    tags$h3("Resource Usage Analysis", class = "mt-4"),
+    tags$p(tags$strong("Phase: "), input$phase),
+    
+    # Current controller section
+    tags$div(
+      class = "p-3 mb-3 bg-light rounded",
+      tags$h4("Current Controller", class = "text-primary mb-3"),
+      tags$p(tags$strong("Controller: "), current_controller_name),
+      tags$p(tags$strong("Specifications: ")),
+      tags$ul(
+        tags$li(sprintf("Memory: %d GB", current_controller$memory_gigabytes)),
+        tags$li(sprintf("CPUs: %d", current_controller$cpus)),
+        tags$li(sprintf("Wall time: %d minutes", current_controller$walltime_minutes))
+      ),
+      tags$p(tags$strong("Peak Usage: ")),
+      tags$ul(
+        tags$li(sprintf("Memory: %.1f GB", required$memory)),
+        tags$li(sprintf("CPU: %.1f cores", required$cpu)),
+        tags$li(sprintf("Time: %.1f minutes", required$time))
+      )
+    ),
+        # Warnings section
+    if (length(warnings) > 0) {
+      tags$div(
+        class = "p-3 bg-warning rounded",
+        tags$h4("Warnings", class = "text-danger"),
+        tags$ul(
+          lapply(warnings, function(w) {
+            tags$li(
+              tags$i(class = "fas fa-exclamation-triangle me-2"),
+              w
+            )
+          })
         )
-      
-      # Required resources - memory in GB, CPU in cores, time in minutes
-      required <- list(
-        memory = max(analysis$peak_mem_gb),
-        cpu = max(1, ceiling(max(analysis$peak_cpu) / 100 * 8)), # Convert % to cores
-        time = max(analysis$duration_min)
       )
-      
-      # Find smallest controller meeting all requirements
-      optimal_controller <- controllers[[1]]
-      for (controller in controllers) {
-        if (controller$memory_gigabytes >= required$memory && 
-            controller$cpus >= required$cpu &&
-            controller$walltime_minutes >= required$time) {
-          optimal_controller <- controller
-          break
-        }
-      }
-      
-      # Build analysis text
-      controller_text <- sprintf(
-        "\nCurrent Controller: %s\nPeak Usage:\n- Memory: %.1f GB\n- CPU: %.1f cores\n- Time: %.1f minutes\n",
-        current_controller, required$memory, required$cpu, required$time
-      )
-      
-      if (optimal_controller$name != current_controller) {
-        controller_text <- paste0(
-          controller_text,
-          sprintf("\nRecommended Controller: %s\nReason: Minimum controller meeting requirements for:\n", 
-                  optimal_controller$name),
-          sprintf("- Memory: %.1f GB needed\n", required$memory),
-          sprintf("- CPU: %d cores needed\n", required$cpu),
-          sprintf("- Time: %.1f minutes needed", required$time)
+    },
+    # Recommendation section
+    if (optimal_controller$name != current_controller_name) {
+      tags$div(
+        class = "p-3 mb-3 bg-light rounded",
+        tags$h4("Recommendation", class = "text-info"),
+        tags$p(
+          tags$strong(class = "text-warning", "Suggested Controller: "), 
+          tags$strong(class = "text-warning", optimal_controller$name),
+          tags$p("Specifications:"),
+          tags$ul(
+            tags$li(sprintf("Memory: %d GB", optimal_controller$memory_gigabytes)),
+            tags$li(sprintf("CPUs: %d", optimal_controller$cpus)),
+            tags$li(sprintf("Wall time: %d minutes", optimal_controller$walltime_minutes))
+          )
         )
-      } else {
-        controller_text <- paste0(controller_text, "\nCurrent controller is appropriate")
-      }
-      
-      # Resource-specific warnings
-      warnings <- c(
-        if (required$memory > 0.9 * optimal_controller$memory_gigabytes) 
-          "WARNING: Memory usage close to limit",
-        if (required$time > 0.9 * optimal_controller$walltime_minutes) 
-          "WARNING: Execution time close to limit"
       )
-      
-      paste(
-        c(
-          "Resource Usage Analysis:",
-          sprintf("Phase: %s", input$phase),
-          controller_text,
-          if (length(warnings) > 0) c("", "Warnings:", warnings),
-          ""
-        ),
-        collapse = "\n"
+    } else {
+      tags$div(
+        class = "p-3 mb-3 bg-light rounded",
+        tags$p(
+          class = "text-success",
+          tags$strong("Current controller is appropriate")
+        )
       )
-    })
+    }
+  )
+})
   }
 # Launch app
 shinyApp(ui = ui, server = server)

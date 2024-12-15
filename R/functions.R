@@ -8,7 +8,7 @@
 #' The **hprcc** package has a number of settings that can be configured
 #' via [options()][base::options] or environment variables, providing
 #' the flexibility to use it with any containerized environment supporting
-#' R and \pkg{targets} (>=1.9.1).
+#' R and [targets][targets::targets-package] (>=1.9.1).
 #' 
 #' Options can be set by calling [options()][base::options] _before_ loading the **hprcc** package in
 #' `_targets.R`. Option settings take precedence over environment variables, where
@@ -17,13 +17,13 @@
 #'
 #' @section Options:
 #' \describe{
-#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & \pkg{autometric} logging. If
-#'         `TRUE`, logs are saved to \code{tar_path_store()}/logs. Logs capture the `stderr`
+#'   \item{hprcc.slurm_logs}{logical. Enable SLURM job & [autometric](https://wlandau.github.io/autometric/index.html)
+#'         logging. If `TRUE`, logs are saved to `logs/` in [targets::tar_path_store()]. Logs capture the `stderr`
 #'         and `stdout` of each SLURM job, and can be parsed by [autometric::log_read()]. \cr
 #'         Default: `FALSE`.}
 #'   \item{hprcc.slurm_verbose}{logical. Show SLURM messages in the console. \cr
 #'         Default: `FALSE`}
-#'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to \code{tar_path_store()}/jobs; use the
+#'   \item{hprcc.slurm_jobs}{logical. Write SLURM submission scripts to `jobs/ in `[targets::tar_path_store()]; use the
 #'         default of `$TMPDIR` if `FALSE`. \cr
 #'         Default: `FALSE`}
 #'   \item{hprcc.slurm_account}{character. SLURM account for job submission. \cr
@@ -47,7 +47,7 @@
 #'         Environment: `$SINGULARITY_BIND` \cr
 #'         Apollo default: `"/labs,/opt,/ref_genome,/run"` \cr
 #'         Gemini default: `"/packages,/run,/ref_genomes,/scratch"`}
-#'   \item{hprcc.default_partition}{Default SLURM partition. Automatically detected using `scontrol show partition`. \cr
+#'   \item{hprcc.default_partition}{Default SLURM partition. Automatically detected using \code{"scontrol show partition"}. \cr
 #'         Default: Dynamically retrieved default partition from SLURM configuration.}
 #' }
 #'
@@ -60,7 +60,7 @@ NULL
 # Env for storing package settings
 HPRCC <- new.env(parent = environment())
 
-#' Determine Cluster Name Based on Hostname
+#' Determine Cluster Based on Hostname
 #'
 #' Retrieves the name of the COH HPRCC cluster by matching the system's hostname
 #' against known patterns. It supports 'apollo' and 'gemini' clusters.
@@ -85,11 +85,10 @@ get_cluster <- function() {
 
 #' Set Up a Controller for SLURM Jobs on COH Clusters
 #'
-#' Configures and initializes a
-#' [`controller`](https://wlandau.github.io/crew.cluster/reference/crew_controller_slurm.html)
-#' for managing SLURM jobs on City of Hope clusters using the
-#' \{[`crew.cluster`](https://wlandau.github.io/crew.cluster/)\} package to facilitate job
-#' execution, managing resources such as CPU, memory, walltime, and writing SLURM logs and scripts.
+#' Configures and initializes a [controller][crew.cluster::crew_controller_slurm]
+#' for managing SLURM jobs on City of Hope clusters using the [crew.cluster][crew.cluster::crew.cluster-package]
+#' package to facilitate job execution, managing resources such as CPU, memory, walltime, and
+#' writing SLURM logs and scripts.
 #'
 #' @param name A unique identifier for the controller.
 #' @param slurm_cpus Number of CPU cores allocated to each task.
@@ -97,7 +96,7 @@ get_cluster <- function() {
 #' @param slurm_walltime_minutes Maximum allowed execution time per task, in minutes. Defaults to 720 (12 hours).
 #' @param slurm_workers Total number of parallel tasks the controller can handle. Defaults to 350.
 #' @param slurm_partition SLURM partition for job submission. Default set by cluster.
-#' See [package options](../reference/package-options.html) for defaults.
+#' See [package options][package-options] for defaults.
 #'
 #' @details
 #' `create_controller` streamlines SLURM job setup on COH clusters using
@@ -115,23 +114,28 @@ get_cluster <- function() {
 #' @return A `crew_controller` object, ready to manage SLURM job submissions and monitoring.
 #' @export
 #' @examples
-#' # Basic controller with minimal resources
-#' ctrl <- create_controller("test",
+#' \dontrun{
+#'  # Basic controller with minimal resources
+#'  ctrl <- create_controller("test",
 #'                         slurm_cpus = 2,
 #'                         slurm_mem_gigabytes = 8)
-#'
+#' }
 #' # GPU configuration on Gemini
-#' if (get_cluster() == "gemini") {
-#'   gpu_ctrl <- create_controller("gpu_job",
+#' \dontrun{
+#'  if (get_cluster() == "gemini") {
+#'       gpu_ctrl <- create_controller("gpu_job",
 #'                               slurm_cpus = 4,
 #'                               slurm_mem_gigabytes = 60,
 #'                               slurm_partition = "gpu-a100")
+#'  }
 #' }
 #'
 #' # Retry controller with escalating resources
+#' \dontrun{
 #' retry_ctrl <- create_controller("retry",
 #'                               slurm_cpus = c(2, 4, 8),
 #'                               slurm_mem_gigabytes = c(8, 16, 32))
+#' }
 #' @importFrom glue glue
 #' @importFrom here here
 #' @importFrom crew.cluster crew_controller_slurm

@@ -25,17 +25,16 @@ create_controller(
 \item{slurm_workers}{Total number of parallel tasks the controller can handle. Defaults to 350.}
 
 \item{slurm_partition}{SLURM partition for job submission. Default set by cluster.
-See \href{../reference/package-options.html}{package options} for defaults.}
+See \link[=package-options]{package options} for defaults.}
 }
 \value{
 A \code{crew_controller} object, ready to manage SLURM job submissions and monitoring.
 }
 \description{
-Configures and initializes a
-\href{https://wlandau.github.io/crew.cluster/reference/crew_controller_slurm.html}{\code{controller}}
-for managing SLURM jobs on City of Hope clusters using the
-\{\href{https://wlandau.github.io/crew.cluster/}{\code{crew.cluster}}\} package to facilitate job
-execution, managing resources such as CPU, memory, walltime, and writing SLURM logs and scripts.
+Configures and initializes a \link[crew.cluster:crew_controller_slurm]{controller}
+for managing SLURM jobs on City of Hope clusters using the \link[crew.cluster:crew.cluster-package]{crew.cluster}
+package to facilitate job execution, managing resources such as CPU, memory, walltime, and
+writing SLURM logs and scripts.
 }
 \details{
 \code{create_controller} streamlines SLURM job setup on COH clusters using
@@ -51,23 +50,28 @@ cluster setup. This functionality is especially useful in environments with vary
 resource paths and setups, simplifying job execution across the two platforms.
 }
 \examples{
-# Basic controller with minimal resources
-ctrl <- create_controller("test",
+\dontrun{
+ # Basic controller with minimal resources
+ ctrl <- create_controller("test",
                         slurm_cpus = 2,
                         slurm_mem_gigabytes = 8)
-
+}
 # GPU configuration on Gemini
-if (get_cluster() == "gemini") {
-  gpu_ctrl <- create_controller("gpu_job",
+\dontrun{
+ if (get_cluster() == "gemini") {
+      gpu_ctrl <- create_controller("gpu_job",
                               slurm_cpus = 4,
                               slurm_mem_gigabytes = 60,
                               slurm_partition = "gpu-a100")
+ }
 }
 
 # Retry controller with escalating resources
+\dontrun{
 retry_ctrl <- create_controller("retry",
                               slurm_cpus = c(2, 4, 8),
                               slurm_mem_gigabytes = c(8, 16, 32))
+}
 }
 \seealso{
 \code{\link[crew.cluster]{crew_controller_slurm}} for more on SLURM controllers.

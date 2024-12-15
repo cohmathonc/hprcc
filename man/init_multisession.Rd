@@ -2,16 +2,17 @@
 % Please edit documentation in R/utils.R
 \name{init_multisession}
 \alias{init_multisession}
-\title{Initialize Multisession Computation with Future}
+\title{Initialize Multisession Computation}
 \usage{
 init_multisession()
 }
 \value{
-Invisibly returns the result of \code{future::plan()}.
+Invisibly returns the result of \code{\link[future:plan]{future::plan()}}.
 }
 \description{
-Configures the \{future\} package for multisession computation, adapting resource
-settings based on the SLURM job's allocation or system resources.
+Configures \href{https://www.futureverse.org}{future and futureverse} packages for multisession
+computation, adapting resource settings based on the SLURM job's allocation or
+system resources.
 }
 \details{
 In a SLURM environment, it sets the number of workers and memory allocation

@@ -37,3 +37,4 @@ log_hprcc_settings()
 \seealso{
 \code{\link[targets:tar_path_store]{targets::tar_path_store()}} for understanding the log file location
 }
+\keyword{internal}
