@@ -171,7 +171,7 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
-        options(hprcc.slurm_logs = TRUE, hprcc.slurm_verbose = TRUE)
+        options(hprcc.slurm_logs = TRUE, hprcc.slurm_jobs = TRUE)
         tar_source("../R")
         configure_targets_options()
         Sys.setenv("R_LIBS_USER"="")
