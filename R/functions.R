@@ -9,7 +9,7 @@
 #' via [options()][base::options] or environment variables, providing
 #' the flexibility to use it with any containerized environment supporting
 #' R and [targets][targets::targets-package] (>=1.9.1).
-#' 
+#'
 #' Options can be set by calling [options()][base::options] _before_ loading the **hprcc** package in
 #' `_targets.R`. Option settings take precedence over environment variables, where
 #' indicated below. If no `options` are set, the default configuration
