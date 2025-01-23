@@ -162,7 +162,7 @@ create_controller <- function(name,
     script_lines <- glue::glue(
         "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else '\n'} ",
         "{HPRCC$slurm_account}\n",
-        "cd {here::here()} \n",
+        #"cd {here::here()} \n",
         "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
 --env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\
