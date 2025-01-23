@@ -1,6 +1,6 @@
 Package: hprcc
 Title: Simplify running R jobs on City of Hope clusters
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     person("Denis", "O'Meally", , "domeally@coh.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-7749-9506"))
@@ -21,7 +21,7 @@ Imports:
     qs2,
     shiny,
     stringr,
-    targets (>= 1.9.1)
+    targets (>= 1.10.0)
 Suggests: 
     knitr,
     rmarkdown,

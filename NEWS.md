@@ -1,5 +1,9 @@
 # hprcc 0.0.1
 
+- bug fixes
+
+# hprcc 0.0.1
+
 - explore_logs() Shiny app with controller recommendations
 - moved to <https://cgt.coh.org/hprcc>
 

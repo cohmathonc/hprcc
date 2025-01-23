@@ -9,7 +9,7 @@
 #' via [options()][base::options] or environment variables, providing
 #' the flexibility to use it with any containerized environment supporting
 #' R and [targets][targets::targets-package] (>=1.9.1).
-#' 
+#'
 #' Options can be set by calling [options()][base::options] _before_ loading the **hprcc** package in
 #' `_targets.R`. Option settings take precedence over environment variables, where
 #' indicated below. If no `options` are set, the default configuration
@@ -156,12 +156,13 @@ create_controller <- function(name,
         }
         gpu_req <- glue::glue("#SBATCH --gres gpu:1 \n#SBATCH --ntasks=1 \n")
     } else {
-        gpu_req <- ""
+        gpu_req <- NULL
     }
 
     script_lines <- glue::glue(
-        "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else ''} ",
-        "{HPRCC$slurm_account} ",
+        "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else '\n'} ",
+        "{HPRCC$slurm_account}\n",
+        #"cd {here::here()} \n",
         "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
 --env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\

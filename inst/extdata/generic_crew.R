@@ -125,7 +125,7 @@ base_dir <- if (hprcc::get_cluster() == "apollo") {
     "/opt/singularity-images/rbioc"
 } else {
     "/packages/singularity/shared_cache/rbioc"
-}    
+}
 singularity_exec <- glue::glue("cd {here::here()} \
 {singularity_bin} exec \\
 -B {base_dir} \\
@@ -171,14 +171,12 @@ tar_config_set(store = paste0(dir, "/_targets"))
 
 tar_script(
     {
-        options(hprcc.slurm_logs = TRUE, hprcc.slurm_verbose = TRUE)
+        options(hprcc.slurm_logs = TRUE, hprcc.slurm_jobs = TRUE)#, hprcc.default_partition = "fast,all")
         tar_source("../R")
         configure_targets_options()
-        Sys.setenv("R_LIBS_USER"="")
+        Sys.setenv("R_LIBS_USER" = "")
         log_hprcc_settings()
 
-        # devtools::load_all()
-    
         list(
             tar_target(y1, {Sys.sleep(2);1 + 1}, resources = small),
             tar_target(y2, 1 + 1, resources = tiny),
@@ -192,3 +190,33 @@ tar_make()
 
 setwd(old_dir)
 unlink(dir, recursive = TRUE)
+
+# library(targets)
+# Sys.setenv(TAR_WARN = "false")
+
+# old <- getwd()
+# dir <- paste0(old, "/targets_temp_dir")
+# dir.create(dir, showWarnings = FALSE)
+# setwd(dir)
+
+# tar_config_set(store = paste0(dir, "/_targets"))
+
+# tar_script(
+#     {
+#         options(hprcc.slurm_logs = TRUE, hprcc.slurm_jobs = TRUE)
+#         Sys.setenv("TMPDIR" = "/home/domeally/R/jobs")
+#         library(hprcc)
+
+#         list(
+#             tar_target(y1, 1 + 1, deployment = "main"),
+#             tar_target(y2, 1 + 1, resources = tiny),
+#             tar_target(z, y1 + y2, resources = tiny)
+#         )
+#     },
+#     ask = FALSE
+# )
+
+# tar_make()
+
+# setwd(old)
+# unlink(dir, recursive = TRUE)
