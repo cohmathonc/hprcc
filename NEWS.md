@@ -1,4 +1,8 @@
-# hprcc 0.0.1
+# hprcc 0.0.3
+
+- cd to folder containing target store in SLURM script
+
+# hprcc 0.0.2
 
 - bug fixes
 
