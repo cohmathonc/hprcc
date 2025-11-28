@@ -472,15 +472,19 @@ configure_targets_options <- function() {
 
 # -----------------------------------------------------------------------------
 .onAttach <- function(libname, pkgname) {
-    # Always configure HPRCC environment so user options are respected
-    # This allows options(hprcc.slurm_logs = TRUE) set before library() to work
-    configure_targets_options()
+    # Only configure on known clusters (apollo or gemini)
+    cluster <- suppressWarnings(get_cluster())
+    if (!is.null(cluster)) {
+        # Configure HPRCC environment so user options are respected
+        # This allows options(hprcc.slurm_logs = TRUE) set before library() to work
+        configure_targets_options()
 
-    if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
-        # Additional SLURM-specific configuration
-        options(parallelly.availableCores.methods = "Slurm")
-        if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
-            log_hprcc_settings()
+        if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
+            # Additional SLURM-specific configuration
+            options(parallelly.availableCores.methods = "Slurm")
+            if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
+                log_hprcc_settings()
+            }
         }
     } else {
         packageStartupMessage(
