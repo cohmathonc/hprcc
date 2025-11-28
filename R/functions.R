@@ -80,6 +80,7 @@ get_cluster <- function() {
         return("gemini")
     } else {
         warning("Unknown cluster")
+        return(NULL)
     }
 }
 
