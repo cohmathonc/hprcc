@@ -24,7 +24,7 @@ test_that("get_cluster gives a warning for unknown hostname", {
         Sys.info = function() list(nodename = "unknown"),
         {
             expect_warning(cluster <- get_cluster(), "Unknown cluster")
-            expect_equal(cluster, "Unknown cluster") # Changed from expect_null
+            expect_null(cluster)
         }
     )
 })
