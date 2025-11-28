@@ -1,4 +1,26 @@
 library(testthat)
+library(hprcc)
+
+# Tests for log_hprcc_settings()
+test_that("log_hprcc_settings returns NULL when logging disabled", {
+    withr::with_options(
+        list(hprcc.slurm_logs = FALSE),
+        {
+            result <- log_hprcc_settings()
+            expect_null(result)
+        }
+    )
+})
+
+# Tests for default_partition()
+test_that("default_partition uses option when set", {
+    withr::with_options(
+        list(hprcc.default_partition = "test_partition"),
+        {
+            expect_equal(default_partition(), "test_partition")
+        }
+    )
+})
 
 # Tests for get_cluster()
 test_that("get_cluster returns 'apollo' for matching hostname", {
@@ -24,7 +46,7 @@ test_that("get_cluster gives a warning for unknown hostname", {
         Sys.info = function() list(nodename = "unknown"),
         {
             expect_warning(cluster <- get_cluster(), "Unknown cluster")
-            expect_equal(cluster, "Unknown cluster") # Changed from expect_null
+            expect_null(cluster)
         }
     )
 })

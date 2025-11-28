@@ -80,6 +80,7 @@ get_cluster <- function() {
         return("gemini")
     } else {
         warning("Unknown cluster")
+        return(NULL)
     }
 }
 
@@ -351,11 +352,17 @@ configure_targets_options <- function() {
     HPRCC$singularity_container <- singularity_container()
 
     HPRCC$use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
+    store_path <- targets::tar_path_store()
+    # Handle relative paths, absolute paths, and tilde paths
+    if (startsWith(store_path, "/")) {
+        store_base <- store_path
+    } else if (startsWith(store_path, "~")) {
+        store_base <- path.expand(store_path)
+    } else {
+        store_base <- file.path(getwd(), store_path)
+    }
     HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir) {
-        normalizePath(
-            file.path(getwd(), targets::tar_path_store(), "jobs"),
-            mustWork = FALSE
-        )
+        normalizePath(file.path(store_base, "jobs"), mustWork = FALSE)
     } else {
         tempdir()
     }
@@ -364,7 +371,7 @@ configure_targets_options <- function() {
 
     HPRCC$use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
     HPRCC$log_output <- normalizePath(
-        file.path(getwd(), targets::tar_path_store(), "logs", "crew-%j.out"),
+        file.path(store_base, "logs", "crew-%j.out"),
         mustWork = FALSE
     )
     if (HPRCC$use_slurm_log) {
@@ -466,15 +473,19 @@ configure_targets_options <- function() {
 
 # -----------------------------------------------------------------------------
 .onAttach <- function(libname, pkgname) {
-    # Always configure HPRCC environment so user options are respected
-    # This allows options(hprcc.slurm_logs = TRUE) set before library() to work
-    configure_targets_options()
+    # Only configure on known clusters (apollo or gemini)
+    cluster <- suppressWarnings(get_cluster())
+    if (!is.null(cluster)) {
+        # Configure HPRCC environment so user options are respected
+        # This allows options(hprcc.slurm_logs = TRUE) set before library() to work
+        configure_targets_options()
 
-    if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
-        # Additional SLURM-specific configuration
-        options(parallelly.availableCores.methods = "Slurm")
-        if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
-            log_hprcc_settings()
+        if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
+            # Additional SLURM-specific configuration
+            options(parallelly.availableCores.methods = "Slurm")
+            if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
+                log_hprcc_settings()
+            }
         }
     } else {
         packageStartupMessage(
