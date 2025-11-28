@@ -166,7 +166,7 @@ create_controller <- function(
     script_lines <- glue::glue(
         "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else '\n'} ",
         "{HPRCC$slurm_account}\n",
-        "cd {dirname(here::here(targets::tar_config_get('store')))} \n",
+        "cd {getwd()} \n",
         "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
 --env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\
@@ -351,16 +351,22 @@ configure_targets_options <- function() {
     HPRCC$singularity_container <- singularity_container()
 
     HPRCC$use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
-    HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir)
-        here::here(glue::glue("{targets::tar_path_store()}/jobs")) else
+    HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir) {
+        normalizePath(
+            file.path(getwd(), targets::tar_path_store(), "jobs"),
+            mustWork = FALSE
+        )
+    } else {
         tempdir()
+    }
     if (HPRCC$use_jobs_dir)
         dir.create(HPRCC$slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
 
     HPRCC$use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
-    HPRCC$log_output <- here::here(glue::glue(
-        "{targets::tar_path_store()}/logs/crew-%j.out"
-    ))
+    HPRCC$log_output <- normalizePath(
+        file.path(getwd(), targets::tar_path_store(), "logs", "crew-%j.out"),
+        mustWork = FALSE
+    )
     if (HPRCC$use_slurm_log) {
         dir.create(
             dirname(HPRCC$log_output),
