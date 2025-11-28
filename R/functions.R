@@ -460,9 +460,12 @@ configure_targets_options <- function() {
 
 # -----------------------------------------------------------------------------
 .onAttach <- function(libname, pkgname) {
+    # Always configure HPRCC environment so user options are respected
+    # This allows options(hprcc.slurm_logs = TRUE) set before library() to work
+    configure_targets_options()
+
     if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
-        # Configure everything for SLURM environment
-        configure_targets_options()
+        # Additional SLURM-specific configuration
         options(parallelly.availableCores.methods = "Slurm")
         if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
             log_hprcc_settings()
