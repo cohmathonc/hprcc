@@ -1,3 +1,9 @@
+# hprcc 0.0.4
+
+- Fix SLURM log paths: respect `options(hprcc.slurm_logs = TRUE)` set before `library(hprcc)`
+- Fix SLURM log paths: use `getwd()` instead of `here::here()` to avoid wrong project root detection
+- Fix SLURM log paths: handle absolute and tilde paths from `tar_path_store()` correctly
+
 # hprcc 0.0.3
 
 - cd to folder containing target store in SLURM script
