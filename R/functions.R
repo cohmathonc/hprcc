@@ -140,19 +140,23 @@ get_cluster <- function() {
 #' @importFrom here here
 #' @importFrom crew.cluster crew_controller_slurm
 #' @seealso \code{\link[crew.cluster]{crew_controller_slurm}} for more on SLURM controllers.
-create_controller <- function(name,
-                              slurm_cpus,
-                              slurm_mem_gigabytes,
-                              slurm_walltime_minutes = 720L,
-                              slurm_workers = 350L,
-                              slurm_partition = default_partition()) {
+create_controller <- function(
+    name,
+    slurm_cpus,
+    slurm_mem_gigabytes,
+    slurm_walltime_minutes = 720L,
+    slurm_workers = 350L,
+    slurm_partition = default_partition()
+) {
     # GPU check
     if (grepl("gpu", slurm_partition)) {
         if (get_cluster() != "gemini") {
             stop("GPU jobs are only supported on the Gemini cluster.")
         }
         if (slurm_cpus > 8L) {
-            stop("For GPU partitions, the number of CPUs must be less than or equal to 8.")
+            stop(
+                "For GPU partitions, the number of CPUs must be less than or equal to 8."
+            )
         }
         gpu_req <- glue::glue("#SBATCH --gres gpu:1 \n#SBATCH --ntasks=1 \n")
     } else {
@@ -162,7 +166,7 @@ create_controller <- function(name,
     script_lines <- glue::glue(
         "{if (!is.null(gpu_req) && nzchar(gpu_req)) gpu_req else '\n'} ",
         "{HPRCC$slurm_account}\n",
-        #"cd {here::here()} \n",
+        "cd {dirname(here::here(targets::tar_config_get('store')))} \n",
         "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
 --env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\
@@ -188,7 +192,10 @@ create_controller <- function(name,
         seconds_idle = 30L,
         garbage_collection = TRUE,
         options_cluster = slurm_options,
-        options_metrics = crew::crew_options_metrics(path = "/dev/stdout", seconds_interval = 1L)
+        options_metrics = crew::crew_options_metrics(
+            path = "/dev/stdout",
+            seconds_interval = 1L
+        )
     )
 }
 
@@ -201,9 +208,13 @@ r_libs_site <- function() {
     } else if (nzchar(Sys.getenv("R_LIBS_SITE"))) {
         return(Sys.getenv("R_LIBS_SITE"))
     } else if (get_cluster() == "apollo") {
-        return(glue::glue("/opt/singularity-images/rbioc/rlibs/bioc-{Sys.getenv('BIOCONDUCTOR_VERSION')}"))
+        return(glue::glue(
+            "/opt/singularity-images/rbioc/rlibs/bioc-{Sys.getenv('BIOCONDUCTOR_VERSION')}"
+        ))
     } else if (get_cluster() == "gemini") {
-        return(glue::glue("/packages/singularity/shared_cache/rbioc/rlibs/bioc-{Sys.getenv('BIOCONDUCTOR_VERSION')}"))
+        return(glue::glue(
+            "/packages/singularity/shared_cache/rbioc/rlibs/bioc-{Sys.getenv('BIOCONDUCTOR_VERSION')}"
+        ))
     } else {
         warning("Unknown cluster, please set R_LIBS_SITE env var or option")
     }
@@ -217,7 +228,9 @@ singularity_bin <- function() {
     } else if (get_cluster() == "apollo") {
         return("/opt/singularity/3.7.0/bin/singularity")
     } else if (get_cluster() == "gemini") {
-        return("/packages/easy-build/software/singularity/3.7.0/bin/singularity")
+        return(
+            "/packages/easy-build/software/singularity/3.7.0/bin/singularity"
+        )
     } else {
         warning("Unknown cluster, please set SINGULARITY_BIN env var or option")
     }
@@ -229,11 +242,19 @@ singularity_container <- function() {
     } else if (nzchar(Sys.getenv("SINGULARITY_CONTAINER"))) {
         return(Sys.getenv("SINGULARITY_CONTAINER"))
     } else if (get_cluster() == "apollo") {
-        return(glue::glue("/opt/singularity-images/rbioc/vscode-rbioc_", Sys.getenv("BIOCONDUCTOR_VERSION"), ".sif"))
+        return(glue::glue(
+            "/opt/singularity-images/rbioc/vscode-rbioc_",
+            Sys.getenv("BIOCONDUCTOR_VERSION"),
+            ".sif"
+        ))
     } else if (get_cluster() == "gemini") {
-        return(glue::glue("/packages/singularity/shared_cache/rbioc/vscode-rbioc_{Sys.getenv('BIOCONDUCTOR_VERSION')}.sif"))
+        return(glue::glue(
+            "/packages/singularity/shared_cache/rbioc/vscode-rbioc_{Sys.getenv('BIOCONDUCTOR_VERSION')}.sif"
+        ))
     } else {
-        warning("Unknown cluster, please set SINGULARITY_CONTAINER env var or option")
+        warning(
+            "Unknown cluster, please set SINGULARITY_CONTAINER env var or option"
+        )
     }
 }
 
@@ -247,7 +268,9 @@ singularity_bind_dirs <- function() {
     } else if (get_cluster() == "gemini") {
         return("/packages,/run,/ref_genomes,/scratch")
     } else {
-        warning("Unknown cluster, please set SINGULARITY_BIND env var or option")
+        warning(
+            "Unknown cluster, please set SINGULARITY_BIND env var or option"
+        )
     }
 }
 
@@ -262,8 +285,14 @@ slurm_default_partition <- function() {
                 line <- cmd_output[i]
                 # If line starts with PartitionName, get the partition name
                 if (grepl("^PartitionName=", line)) {
-                    current_partition <- sub("PartitionName=([^ ]+).*", "\\1", line)
-                } else if (!is.null(current_partition) && grepl("Default=YES", line)) {
+                    current_partition <- sub(
+                        "PartitionName=([^ ]+).*",
+                        "\\1",
+                        line
+                    )
+                } else if (
+                    !is.null(current_partition) && grepl("Default=YES", line)
+                ) {
                     return(current_partition)
                 }
             }
@@ -288,7 +317,9 @@ default_partition <- function() {
         return(sys_default)
     }
 
-    warning("Could not determine default partition, please set hprcc.default_partition option")
+    warning(
+        "Could not determine default partition, please set hprcc.default_partition option"
+    )
     return(NULL)
 }
 
@@ -298,25 +329,44 @@ default_partition <- function() {
 #' @import qs2
 configure_targets_options <- function() {
     # Populate the HPRCC environment
-    HPRCC$r_libs_user <- if (nzchar(user_libs_path <- getOption("hprcc.r_libs_user", Sys.getenv("R_LIBS_USER")))) {
+    HPRCC$r_libs_user <- if (
+        nzchar(
+            user_libs_path <- getOption(
+                "hprcc.r_libs_user",
+                Sys.getenv("R_LIBS_USER")
+            )
+        )
+    ) {
         glue::glue("--env R_LIBS_USER={user_libs_path}")
     } else {
         ""
     }
     HPRCC$r_libs_site <- r_libs_site()
-    HPRCC$slurm_account <- if (nzchar(account <- getOption("hprcc.slurm_account", ""))) glue::glue("#SBATCH --account {account}") else ""
+    HPRCC$slurm_account <- if (
+        nzchar(account <- getOption("hprcc.slurm_account", ""))
+    )
+        glue::glue("#SBATCH --account {account}") else ""
     HPRCC$singularity_bin <- singularity_bin()
     HPRCC$singularity_bind_dirs <- singularity_bind_dirs()
     HPRCC$singularity_container <- singularity_container()
 
     HPRCC$use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
-    HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir) here::here(glue::glue("{targets::tar_path_store()}/jobs")) else tempdir()
-    if (HPRCC$use_jobs_dir) dir.create(HPRCC$slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
+    HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir)
+        here::here(glue::glue("{targets::tar_path_store()}/jobs")) else
+        tempdir()
+    if (HPRCC$use_jobs_dir)
+        dir.create(HPRCC$slurm_jobs_dir, recursive = TRUE, showWarnings = FALSE)
 
     HPRCC$use_slurm_log <- isTRUE(getOption("hprcc.slurm_logs", FALSE))
-    HPRCC$log_output <- here::here(glue::glue("{targets::tar_path_store()}/logs/crew-%j.out"))
+    HPRCC$log_output <- here::here(glue::glue(
+        "{targets::tar_path_store()}/logs/crew-%j.out"
+    ))
     if (HPRCC$use_slurm_log) {
-        dir.create(dirname(HPRCC$log_output), recursive = TRUE, showWarnings = FALSE)
+        dir.create(
+            dirname(HPRCC$log_output),
+            recursive = TRUE,
+            showWarnings = FALSE
+        )
     } else {
         HPRCC$log_output <- "/dev/null"
     }
@@ -325,17 +375,50 @@ configure_targets_options <- function() {
 
     # Define the common controllers
     controllers <- list(
-        create_controller("tiny", slurm_cpus = 2L, slurm_mem_gigabytes = 8L, slurm_walltime_minutes = 60L),
-        create_controller("small", slurm_cpus = 2L, slurm_mem_gigabytes = 20L, slurm_walltime_minutes = 360L),
-        create_controller("medium", slurm_cpus = 4L, slurm_mem_gigabytes = 40L, slurm_walltime_minutes = 360L),
-        create_controller("large", slurm_cpus = 8L, slurm_mem_gigabytes = 80L, slurm_walltime_minutes = 360L),
-        create_controller("large_mem",
-            slurm_cpus = 8L, slurm_mem_gigabytes = 800L, slurm_walltime_minutes = 360L,
+        create_controller(
+            "tiny",
+            slurm_cpus = 2L,
+            slurm_mem_gigabytes = 8L,
+            slurm_walltime_minutes = 60L
+        ),
+        create_controller(
+            "small",
+            slurm_cpus = 2L,
+            slurm_mem_gigabytes = 20L,
+            slurm_walltime_minutes = 360L
+        ),
+        create_controller(
+            "medium",
+            slurm_cpus = 4L,
+            slurm_mem_gigabytes = 40L,
+            slurm_walltime_minutes = 360L
+        ),
+        create_controller(
+            "large",
+            slurm_cpus = 8L,
+            slurm_mem_gigabytes = 80L,
+            slurm_walltime_minutes = 360L
+        ),
+        create_controller(
+            "large_mem",
+            slurm_cpus = 8L,
+            slurm_mem_gigabytes = 800L,
+            slurm_walltime_minutes = 360L,
             slurm_partition = ifelse(get_cluster() == "apollo", "all", "bigmem")
         ),
-        create_controller("xlarge", slurm_cpus = 20L, slurm_mem_gigabytes = 200L),
-        create_controller("huge", slurm_cpus = 40L, slurm_mem_gigabytes = 200L, slurm_walltime_minutes = 120L),
-        create_controller("retry",
+        create_controller(
+            "xlarge",
+            slurm_cpus = 20L,
+            slurm_mem_gigabytes = 200L
+        ),
+        create_controller(
+            "huge",
+            slurm_cpus = 40L,
+            slurm_mem_gigabytes = 200L,
+            slurm_walltime_minutes = 120L
+        ),
+        create_controller(
+            "retry",
             slurm_cpus = c(2L, 4L, 8L, 20L, 40L),
             slurm_mem_gigabytes = c(8L, 20L, 40L, 80L, 120L, 200L),
             slurm_walltime_minutes = c(60L, 360L, 360L, 720L, 720L)
@@ -345,8 +428,20 @@ configure_targets_options <- function() {
     # Conditionally add GPU controllers if on the 'gemini' cluster
     if (get_cluster() == "gemini") {
         gpu_controllers <- list(
-            create_controller("gpu_medium", slurm_cpus = 4, slurm_mem_gigabytes = 60, slurm_walltime_minutes = 120, slurm_partition = "gpu-a100,gpu-v100"),
-            create_controller("gpu_large", slurm_cpus = 8, slurm_mem_gigabytes = 120, slurm_walltime_minutes = 240, slurm_partition = "gpu-a100,gpu-v100")
+            create_controller(
+                "gpu_medium",
+                slurm_cpus = 4,
+                slurm_mem_gigabytes = 60,
+                slurm_walltime_minutes = 120,
+                slurm_partition = "gpu-a100,gpu-v100"
+            ),
+            create_controller(
+                "gpu_large",
+                slurm_cpus = 8,
+                slurm_mem_gigabytes = 120,
+                slurm_walltime_minutes = 240,
+                slurm_partition = "gpu-a100,gpu-v100"
+            )
         )
         controllers <- c(controllers, gpu_controllers)
     }
@@ -358,26 +453,32 @@ configure_targets_options <- function() {
         retrieval = "worker",
         controller = do.call(crew::crew_controller_group, controllers),
         resources = targets::tar_resources(
-        crew = targets::tar_resources_crew(controller = "small")
+            crew = targets::tar_resources_crew(controller = "small")
         )
     )
 }
 
 # -----------------------------------------------------------------------------
 .onAttach <- function(libname, pkgname) {
+    # Always configure HPRCC environment so user options are respected
+    # This allows options(hprcc.slurm_logs = TRUE) set before library() to work
+    configure_targets_options()
+
     if (nzchar(Sys.getenv("SLURM_JOB_ID"))) {
-        # Configure everything for SLURM environment
-        configure_targets_options()
+        # Additional SLURM-specific configuration
         options(parallelly.availableCores.methods = "Slurm")
         if (isTRUE(getOption("hprcc.slurm_logs", FALSE))) {
             log_hprcc_settings()
         }
     } else {
-        packageStartupMessage("Note: This package is designed for use on the City of Hope High Performance Research Computing Cluster (HPRCC). Some functionality may be limited on other systems.")
+        packageStartupMessage(
+            "Note: This package is designed for use on the City of Hope High Performance Research Computing Cluster (HPRCC). Some functionality may be limited on other systems."
+        )
     }
 }
 
 .onLoad <- function(libname, pkgname) {
     # Set parallelly options
-    if (nzchar(Sys.getenv("SLURM_JOB_ID"))) options(parallelly.availableCores.methods = "Slurm")
+    if (nzchar(Sys.getenv("SLURM_JOB_ID")))
+        options(parallelly.availableCores.methods = "Slurm")
 }
