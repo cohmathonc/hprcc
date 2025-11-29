@@ -4,6 +4,9 @@
 #' @importFrom stats density
 NULL
 
+# Default controller for hprcc crew workers when no resources= specified
+DEFAULT_CONTROLLER <- "small"
+
 #' Remove hash suffix from phase name
 #' 
 #' @param phase Character vector of phase names with IDs
@@ -62,6 +65,348 @@ autometric_hprcc_controllers <- function() {
     )
     
     return(controllers)
+}
+
+#' Find _targets.R file from logs path
+#'
+#' @param logs_path Path to the logs directory
+#' @return Path to _targets.R file or NULL if not found
+#' @keywords internal
+find_targets_file <- function(logs_path) {
+    # If logs_path is NULL, use current working directory
+    if (is.null(logs_path)) {
+        base_path <- getwd()
+    } else {
+        # logs are typically in _targets/logs, so go up two levels
+        base_path <- normalizePath(file.path(logs_path, "..", ".."), mustWork = FALSE)
+    }
+
+    # Default: _targets.R in project root
+    default_path <- file.path(base_path, "_targets.R")
+    if (file.exists(default_path)) {
+        return(default_path)
+    }
+
+    return(NULL)
+}
+
+#' Parse target-to-controller mapping from _targets.R
+#'
+#' @param targets_file Path to _targets.R file
+#' @return Named character vector mapping target names to controller names
+#' @keywords internal
+parse_target_resources <- function(targets_file) {
+    if (is.null(targets_file) || !file.exists(targets_file)) {
+        return(character(0))
+    }
+
+    # Read file content
+    content <- tryCatch(
+        paste(readLines(targets_file, warn = FALSE), collapse = "\n"),
+        error = function(e) ""
+    )
+
+    if (nchar(content) == 0) {
+        return(character(0))
+    }
+
+    # Match tar_target(name, ..., resources = controller)
+    # This regex captures target name and resource name
+    # Uses [\s\S]*? to match across newlines (non-greedy)
+    pattern <- "tar_target\\s*\\(\\s*(\\w+)[\\s\\S]*?resources\\s*=\\s*(\\w+)"
+
+    matches <- gregexpr(pattern, content, perl = TRUE)
+
+    if (matches[[1]][1] == -1) {
+        return(character(0))
+    }
+
+    # Extract all matches
+    match_strings <- regmatches(content, matches)[[1]]
+
+    # Parse each match to get target name and controller
+    result <- character(0)
+    for (match_str in match_strings) {
+        # Extract target name (first capture group)
+        target_match <- regmatches(
+            match_str,
+            regexec("tar_target\\s*\\(\\s*(\\w+)", match_str)
+        )[[1]]
+
+        # Extract resource/controller name (after resources =)
+        resource_match <- regmatches(
+            match_str,
+            regexec("resources\\s*=\\s*(\\w+)", match_str)
+        )[[1]]
+
+        if (length(target_match) >= 2 && length(resource_match) >= 2) {
+            target_name <- target_match[2]
+            controller_name <- resource_match[2]
+            result[target_name] <- controller_name
+        }
+    }
+
+    return(result)
+}
+
+#' Summarize resource usage and recommendations for targets
+#'
+#' Analyzes autometric logs and compares actual resource usage against configured
+#' controllers to generate optimization recommendations for each target.
+#'
+#' @param path Path to _targets/logs directory. If NULL, uses default location.
+#' @param targets_file Path to _targets.R file. If NULL, auto-detects from path.
+#'
+#' @return A data frame with columns:
+#'   - target: Target name
+#'   - current_controller: Configured controller (or "unknown")
+#'   - peak_memory_gb: Peak memory usage in GB
+#'   - peak_cpu_pct: Peak CPU usage percentage
+#'   - duration_min: Duration in minutes
+#'   - recommended_controller: Optimal controller based on usage
+#'   - status: "ok", "underprovisioned", "overprovisioned", or "unknown"
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Get recommendations for all targets
+#' summary <- summarize_resource_usage()
+#' print(summary)
+#'
+#' # Filter to targets that need adjustment
+#' summary[summary$status != "ok", ]
+#' }
+summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
+    # Load log data
+    logs <- read_targets_logs(path)
+
+    # Add clean phase names
+    logs <- logs |>
+        dplyr::mutate(clean_phase_name = clean_phase_name(phase))
+
+    # Find and parse _targets.R
+    if (is.null(targets_file)) {
+        targets_file <- find_targets_file(path)
+    }
+    target_resources <- parse_target_resources(targets_file)
+
+    # Get controller specs
+    controllers <- autometric_hprcc_controllers()
+
+    # Analyze each unique phase
+    phases <- unique(logs$clean_phase_name)
+    phases <- phases[phases != "__DEFAULT__"]
+
+    results <- lapply(phases, function(phase_name) {
+        phase_data <- logs[logs$clean_phase_name == phase_name, ]
+
+        # Skip if no data
+        if (nrow(phase_data) == 0) {
+            return(NULL)
+        }
+
+        # Get current controller from mapping
+        current_controller_name <- if (!is.na(phase_name) && phase_name %in% names(target_resources)) {
+            target_resources[[phase_name]]
+        } else {
+            "unknown"
+        }
+
+        # Find current controller specs
+        current_controller <- NULL
+        if (current_controller_name != "unknown") {
+            for (ctrl in controllers) {
+                if (ctrl$name == current_controller_name) {
+                    current_controller <- ctrl
+                    break
+                }
+            }
+            if (is.null(current_controller)) {
+                warning(sprintf(
+                    "Unrecognized controller '%s' for target '%s'",
+                    current_controller_name, phase_name
+                ))
+            }
+        }
+
+        # Calculate resource usage
+        analysis <- phase_data |>
+            dplyr::group_by(slurm_job_id) |>
+            dplyr::summarise(
+                peak_mem_gb = max(resident) / 1024,
+                peak_cpu = max(cpu),
+                duration_min = diff(range(time)) / 60,
+                .groups = "drop"
+            )
+
+        peak_memory <- max(analysis$peak_mem_gb)
+        peak_cpu <- max(analysis$peak_cpu)
+        duration <- max(analysis$duration_min)
+
+        # Apply safety margin (1.3x) to account for:
+        # - Parallel worker overhead (BiocParallel/SnowParam spawn child processes)
+        # - Memory spikes between autometric samples
+        # - General headroom to avoid OOM kills
+        safety_margin <- 1.3
+        safe_memory <- peak_memory * safety_margin
+
+        # Find optimal controller
+        # CPU percentage represents usage across all cores (e.g., 200% = 2 cores)
+        required_cpus <- max(1L, ceiling(peak_cpu / 100))
+        recommended <- controllers[[1]]
+        for (ctrl in controllers) {
+            if (ctrl$memory_gigabytes >= safe_memory &&
+                ctrl$cpus >= required_cpus &&
+                ctrl$walltime_minutes >= duration) {
+                recommended <- ctrl
+                break
+            }
+        }
+
+        # Determine status
+        default_controller <- DEFAULT_CONTROLLER
+
+        status <- if (current_controller_name == "unknown") {
+            # If not in _targets.R, check if default would be appropriate
+            if (recommended$name == default_controller) {
+                "ok"  # Default is sufficient, no action needed
+            } else {
+                "unknown"  # Needs explicit resources= set
+            }
+        } else if (is.null(current_controller)) {
+            "unknown"
+        } else if (recommended$name == current_controller_name) {
+            "ok"
+        } else {
+            # Compare controller "sizes" based on memory
+            current_mem <- current_controller$memory_gigabytes
+            recommended_mem <- recommended$memory_gigabytes
+            if (recommended_mem < current_mem) {
+                "overprovisioned"
+            } else {
+                "underprovisioned"
+            }
+        }
+
+        data.frame(
+            target = phase_name,
+            current_controller = current_controller_name,
+            peak_memory_gb = round(peak_memory, 2),
+            peak_cpu_pct = round(peak_cpu, 1),
+            duration_min = round(duration, 1),
+            recommended_controller = recommended$name,
+            status = status,
+            stringsAsFactors = FALSE
+        )
+    })
+
+    # Filter out NULL results (targets that couldn't be processed)
+    results <- results[!sapply(results, is.null)]
+
+    # Handle case where no valid results
+    if (length(results) == 0) {
+        message("No targets could be analyzed. Check that log files contain valid autometric data.")
+        return(data.frame(
+            target = character(),
+            current_controller = character(),
+            peak_memory_gb = numeric(),
+            peak_cpu_pct = numeric(),
+            duration_min = numeric(),
+            recommended_controller = character(),
+            status = character(),
+            stringsAsFactors = FALSE
+        ))
+    }
+
+    # Combine results
+    result <- do.call(rbind, results)
+
+    # Sort by status (issues first) then by target name
+    status_order <- c("underprovisioned", "overprovisioned", "unknown", "ok")
+    result$status_order <- match(result$status, status_order)
+    result <- result[order(result$status_order, result$target), ]
+    result$status_order <- NULL
+
+    rownames(result) <- NULL
+    return(result)
+}
+
+#' Print resource usage recommendations
+#'
+#' Prints a formatted summary of resource usage and recommendations for targets.
+#' Useful for reviewing before updating _targets.R.
+#'
+#' @param path Path to _targets/logs directory. If NULL, uses default location.
+#' @param targets_file Path to _targets.R file. If NULL, auto-detects from path.
+#' @param show_ok Logical, whether to show targets with status "ok". Default FALSE.
+#'
+#' @return Invisibly returns the summary data frame.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Print only targets needing adjustment
+#' print_resource_recommendations()
+#'
+#' # Print all targets including those that are ok
+#' print_resource_recommendations(show_ok = TRUE)
+#' }
+print_resource_recommendations <- function(path = NULL, targets_file = NULL, show_ok = FALSE) {
+    summary <- summarize_resource_usage(path, targets_file)
+
+    if (!show_ok) {
+        summary <- summary[summary$status != "ok", ]
+    }
+
+    if (nrow(summary) == 0) {
+        cat("All targets are appropriately provisioned.\n")
+        return(invisible(summary))
+    }
+
+    cat("Resource Usage Recommendations\n")
+    cat("==============================\n\n")
+
+    for (i in seq_len(nrow(summary))) {
+        row <- summary[i, ]
+
+        # Status indicator
+        status_icon <- switch(row$status,
+            "underprovisioned" = "[!]",
+            "overprovisioned" = "[>]",
+            "unknown" = "[?]",
+            "ok" = "[ok]"
+        )
+
+        cat(sprintf("%s %s\n", status_icon, row$target))
+        cat(sprintf("    Current:     %s\n", row$current_controller))
+        cat(sprintf("    Recommended: %s\n", row$recommended_controller))
+        cat(sprintf("    Usage: %.1f GB memory, %.0f%% CPU, %.1f min\n",
+                    row$peak_memory_gb, row$peak_cpu_pct, row$duration_min))
+
+        # Suggestion for _targets.R
+        default_controller <- DEFAULT_CONTROLLER
+        if (row$status != "ok" && row$current_controller != "unknown") {
+            if (row$recommended_controller == default_controller) {
+                cat(sprintf("    -> Remove resources (default %s is sufficient)\n", default_controller))
+            } else {
+                cat(sprintf("    -> Change: resources = %s\n", row$recommended_controller))
+            }
+        } else if (row$current_controller == "unknown") {
+            if (row$recommended_controller == default_controller) {
+                cat(sprintf("    -> OK: default (%s) is sufficient\n", default_controller))
+            } else {
+                cat(sprintf("    -> Add: resources = %s\n", row$recommended_controller))
+            }
+        }
+        cat("\n")
+    }
+
+    cat("Legend: [!] underprovisioned, [>] overprovisioned, [?] unknown, [ok] appropriate\n")
+    cat(sprintf("Default controller: %s\n", DEFAULT_CONTROLLER))
+
+    invisible(summary)
 }
 
 ### globals
@@ -124,20 +469,22 @@ create_metric_plot <- function(data, metric, y_label, normalize_time = FALSE) {
 
 ### globals
 utils::globalVariables(c(
-  "slurm_job_id", "time", "time_bin", "min_val", "max_val", 
+  "slurm_job_id", "time", "time_bin", "min_val", "max_val",
   "mean_val", "phase", "completion_time", "resident", "cpu",
-  "walltime"
+  "walltime", "clean_phase_name"
 ))
 #' Run Shiny app to explore autometric log data
 #'
-#' Launch an interactive Shiny application for visualizing and analyzing resource usage logs created by 
+#' Launch an interactive Shiny application for visualizing and analyzing resource usage logs created by
 #' the [autometric](https://wlandau.github.io/autometric/) package. The app provides plots and statistics
 #' for memory usage, CPU utilization, and task completion times, and resource request suggestions.
 #'
 #' @param path Path to _targets/logs directory. If NULL, will attempt to find logs in default location
+#' @param targets_file Path to _targets.R file for reading target resource configurations.
+#'   If NULL, will attempt to auto-detect from path.
 #'
 #' @return A Shiny application object
-#' 
+#'
 #' @details
 #' The application provides:
 #' * Interactive plots for memory, CPU usage and wall time analysis
@@ -145,16 +492,27 @@ utils::globalVariables(c(
 #' * Analysis of usage patterns
 #' * Controller recommendations based on observed resource requirements
 #'
+#' The recommendations panel uses the `_targets.R` file to determine which controller
+#' each target is configured to use, then compares actual resource usage against
+#' controller specifications to suggest optimizations.
+#'
 #' @examples
 #' \dontrun{
 #' explore_logs()
 #' explore_logs("path/to/logs")
+#' explore_logs("path/to/logs", targets_file = "path/to/_targets.R")
 #' }
 #'
 #' @export
-explore_logs <- function(path = NULL) {
+explore_logs <- function(path = NULL, targets_file = NULL) {
   # Load log data
   logs <- read_targets_logs(path)
+
+  # Find and parse _targets.R for target-to-controller mapping
+  if (is.null(targets_file)) {
+    targets_file <- find_targets_file(path)
+  }
+  target_resources <- parse_target_resources(targets_file)
   
   # Add clean phase names as a column
   logs <- logs |>
@@ -397,22 +755,37 @@ output$recommendations <- renderUI({
   if (nrow(data) == 0) {
     return(tags$p("No data available for recommendations"))
   }
-  
+
   controllers <- autometric_hprcc_controllers()
-  worker_name <- unique(data$name)[1]
-  current_controller_name <- regmatches(worker_name, regexec("crew_worker_([^_]+)", worker_name))[[1]][2]
-  
+
+  # Get controller name from target_resources mapping using phase name
+  phase_name <- unique(data$clean_phase_name)[1]
+  current_controller_name <- if (!is.null(phase_name) && phase_name %in% names(target_resources)) {
+    target_resources[[phase_name]]
+  } else {
+    NA_character_
+  }
+
   # Find current controller specs
   current_controller <- NULL
-  for (controller in controllers) {
-    if (controller$name == current_controller_name) {
-      current_controller <- controller
-      break
+  if (!is.na(current_controller_name)) {
+    for (controller in controllers) {
+      if (controller$name == current_controller_name) {
+        current_controller <- controller
+        break
+      }
     }
   }
-  
+
+  # If controller not found, use a placeholder with NA values
   if (is.null(current_controller)) {
-    return(tags$p("Error: Could not determine current controller"))
+    current_controller <- list(
+      name = "unknown",
+      memory_gigabytes = NA_real_,
+      cpus = NA_integer_,
+      walltime_minutes = NA_real_
+    )
+    current_controller_name <- "unknown"
   }
   
   analysis <- data |>
@@ -444,21 +817,23 @@ output$recommendations <- renderUI({
     }
   }
   
-  # Resource warnings
+  # Resource warnings (only when current controller specs are known)
   warnings <- list()
-  if (required$memory > 0.9 * current_controller$memory_gigabytes) {
+  if (!is.na(current_controller$memory_gigabytes) &&
+      !is.na(required$memory) &&
+      required$memory > 0.9 * current_controller$memory_gigabytes) {
     warnings <- c(warnings, "Memory usage close to limit")
   }
-  if (required$time > 0.9 * current_controller$walltime_minutes) {
+  if (!is.na(current_controller$walltime_minutes) &&
+      !is.na(required$time) &&
+      required$time > 0.9 * current_controller$walltime_minutes) {
     warnings <- c(warnings, "Execution time close to limit")
   }
-  
-  # Build HTML output
-  tagList(
-    tags$h3("Resource Usage Analysis", class = "mt-4"),
-    tags$p(tags$strong("Phase: "), input$phase),
-    
-    # Current controller section
+
+  # Build current controller display (handle unknown controller)
+  controller_known <- current_controller_name != "unknown"
+
+  current_controller_ui <- if (controller_known) {
     tags$div(
       class = "p-3 mb-3 bg-light rounded",
       tags$h4("Current Controller", class = "text-primary mb-3"),
@@ -475,47 +850,92 @@ output$recommendations <- renderUI({
         tags$li(sprintf("CPU: %.1f cores", required$cpu)),
         tags$li(sprintf("Time: %.1f minutes", required$time))
       )
-    ),
-        # Warnings section
-    if (length(warnings) > 0) {
-      tags$div(
-        class = "p-3 bg-warning rounded",
-        tags$h4("Warnings", class = "text-danger"),
-        tags$ul(
-          lapply(warnings, function(w) {
-            tags$li(
-              tags$i(class = "fas fa-exclamation-triangle me-2"),
-              w
-            )
-          })
-        )
+    )
+  } else {
+    tags$div(
+      class = "p-3 mb-3 bg-light rounded",
+      tags$h4("Current Controller", class = "text-primary mb-3"),
+      tags$p(tags$strong("Controller: "), tags$em("Unknown (not found in _targets.R)")),
+      tags$p(tags$strong("Peak Usage: ")),
+      tags$ul(
+        tags$li(sprintf("Memory: %.1f GB", required$memory)),
+        tags$li(sprintf("CPU: %.1f cores", required$cpu)),
+        tags$li(sprintf("Time: %.1f minutes", required$time))
       )
-    },
-    # Recommendation section
-    if (optimal_controller$name != current_controller_name) {
-      tags$div(
-        class = "p-3 mb-3 bg-light rounded",
-        tags$h4("Recommendation", class = "text-info"),
-        tags$p(
-          tags$strong(class = "text-warning", "Suggested Controller: "), 
-          tags$strong(class = "text-warning", optimal_controller$name),
-          tags$p("Specifications:"),
-          tags$ul(
-            tags$li(sprintf("Memory: %d GB", optimal_controller$memory_gigabytes)),
-            tags$li(sprintf("CPUs: %d", optimal_controller$cpus)),
-            tags$li(sprintf("Wall time: %d minutes", optimal_controller$walltime_minutes))
+    )
+  }
+
+  # Warnings section (only show if there are warnings)
+  warnings_ui <- if (length(warnings) > 0) {
+    tags$div(
+      class = "p-3 bg-warning rounded",
+      tags$h4("Warnings", class = "text-danger"),
+      tags$ul(
+        lapply(warnings, function(w) {
+          tags$li(
+            tags$i(class = "fas fa-exclamation-triangle me-2"),
+            w
           )
-        )
+        })
       )
-    } else {
-      tags$div(
-        class = "p-3 mb-3 bg-light rounded",
-        tags$p(
-          class = "text-success",
-          tags$strong("Current controller is appropriate")
-        )
+    )
+  } else {
+    NULL
+  }
+
+  # Recommendation section (compare optimal vs current, or just show optimal if unknown)
+  show_recommendation <- !is.na(current_controller_name) &&
+                         current_controller_name != "unknown" &&
+                         optimal_controller$name != current_controller_name
+  show_optimal_only <- current_controller_name == "unknown"
+
+  recommendation_ui <- if (show_recommendation) {
+    tags$div(
+      class = "p-3 mb-3 bg-light rounded",
+      tags$h4("Recommendation", class = "text-info"),
+      tags$p(
+        tags$strong(class = "text-warning", "Suggested Controller: "),
+        tags$strong(class = "text-warning", optimal_controller$name)
+      ),
+      tags$p("Specifications:"),
+      tags$ul(
+        tags$li(sprintf("Memory: %d GB", optimal_controller$memory_gigabytes)),
+        tags$li(sprintf("CPUs: %d", optimal_controller$cpus)),
+        tags$li(sprintf("Wall time: %d minutes", optimal_controller$walltime_minutes))
       )
-    }
+    )
+  } else if (show_optimal_only) {
+    tags$div(
+      class = "p-3 mb-3 bg-light rounded",
+      tags$h4("Recommended Controller", class = "text-info"),
+      tags$p("Based on observed resource usage:"),
+      tags$p(
+        tags$strong(class = "text-warning", "Suggested: "),
+        tags$strong(class = "text-warning", optimal_controller$name)
+      ),
+      tags$ul(
+        tags$li(sprintf("Memory: %d GB", optimal_controller$memory_gigabytes)),
+        tags$li(sprintf("CPUs: %d", optimal_controller$cpus)),
+        tags$li(sprintf("Wall time: %d minutes", optimal_controller$walltime_minutes))
+      )
+    )
+  } else {
+    tags$div(
+      class = "p-3 mb-3 bg-light rounded",
+      tags$p(
+        class = "text-success",
+        tags$strong("Current controller is appropriate")
+      )
+    )
+  }
+
+  # Build final HTML output
+  tagList(
+    tags$h3("Resource Usage Analysis", class = "mt-4"),
+    tags$p(tags$strong("Phase: "), input$phase),
+    current_controller_ui,
+    warnings_ui,
+    recommendation_ui
   )
 })
   }

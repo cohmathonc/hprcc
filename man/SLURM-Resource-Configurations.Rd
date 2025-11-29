@@ -28,7 +28,6 @@ The available configurations are:\tabular{llll}{
    large_mem \tab 8 \tab 800 \tab 360 \cr
    xlarge \tab 20 \tab 200 \tab 360 \cr
    huge \tab 40 \tab 200 \tab 120 \cr
-   retry \tab 2, 4, 8, 20, 40 \tab 8, 20, 40, 80, 120, 200 \tab 60, 360, 360, 720, 720 \cr
    gpu_medium^†^ \tab 4 \tab 60 \tab 120 \cr
    gpu_large^†^ \tab 8 \tab 120 \tab 240 \cr
 }

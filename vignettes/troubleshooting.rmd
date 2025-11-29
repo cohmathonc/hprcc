@@ -240,9 +240,9 @@ CPU:
 
 ## Resource Allocation
 - Start with smallest sufficient controller
-- Use retry controller for unpredictable jobs
 - Match CPU count to actual parallelization
-- Add 20% buffer to observed memory usage
+- Add 20-30% buffer to observed memory usage
+- Use `print_resource_recommendations()` to review actual usage
 
 ## Pipeline Design
 - Break large jobs into smaller chunks

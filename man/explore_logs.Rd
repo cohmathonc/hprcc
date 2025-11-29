@@ -4,10 +4,13 @@
 \alias{explore_logs}
 \title{Run Shiny app to explore autometric log data}
 \usage{
-explore_logs(path = NULL)
+explore_logs(path = NULL, targets_file = NULL)
 }
 \arguments{
 \item{path}{Path to _targets/logs directory. If NULL, will attempt to find logs in default location}
+
+\item{targets_file}{Path to _targets.R file for reading target resource configurations.
+If NULL, will attempt to auto-detect from path.}
 }
 \value{
 A Shiny application object
@@ -25,11 +28,16 @@ The application provides:
 \item Analysis of usage patterns
 \item Controller recommendations based on observed resource requirements
 }
+
+The recommendations panel uses the \verb{_targets.R} file to determine which controller
+each target is configured to use, then compares actual resource usage against
+controller specifications to suggest optimizations.
 }
 \examples{
 \dontrun{
 explore_logs()
 explore_logs("path/to/logs")
+explore_logs("path/to/logs", targets_file = "path/to/_targets.R")
 }
 
 }

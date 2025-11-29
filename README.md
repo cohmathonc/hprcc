@@ -22,13 +22,10 @@ You can easily configure your own SLURM resource requests (CPU, RAM, walltime) t
 | large_mem         | 8    | 800                 | 360              |
 | xlarge            | 20   | 200                 | 360              |
 | huge              | 40   | 200                 | 120              |
-| retry^†^          | 2, 4, 8, 20, 40  | 8, 20, 40, 80, 120, 200 | 60, 360, 360, 720, 720 |
-| gpu_medium^‡^     | 4    | 60                  | 120              |
-| gpu_large^‡^      | 8    | 120                 | 240              |
+| gpu_medium^†^     | 4    | 60                  | 120              |
+| gpu_large^†^      | 8    | 120                 | 240              |
 
-^†^ The _retry_ controller will resubmit a job with increased resources if the job fails
-
-^‡^ GPUs only available on _Gemini_
+^†^ GPUs only available on _Gemini_
 
 For a complete list of configurable settings refer to the [package options](reference/package-options.html).
 

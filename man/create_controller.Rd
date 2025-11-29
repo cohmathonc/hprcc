@@ -65,13 +65,6 @@ resource paths and setups, simplifying job execution across the two platforms.
                               slurm_partition = "gpu-a100")
  }
 }
-
-# Retry controller with escalating resources
-\dontrun{
-retry_ctrl <- create_controller("retry",
-                              slurm_cpus = c(2, 4, 8),
-                              slurm_mem_gigabytes = c(8, 16, 32))
-}
 }
 \seealso{
 \code{\link[crew.cluster]{crew_controller_slurm}} for more on SLURM controllers.

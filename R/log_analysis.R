@@ -54,23 +54,28 @@ read_targets_logs <- function(path = NULL,
   
   # Read and combine all logs
   logs <- lapply(files, function(f) {
-    # Read log file
-    log_data <- autometric::log_read(f,
-                                   units_cpu = units_cpu,
-                                   units_memory = units_memory,
-                                   units_time = units_time,
-                                   hidden = hidden)
-    
+    # Read log file, skip files without autometric data
+    log_data <- tryCatch({
+      autometric::log_read(f,
+                          units_cpu = units_cpu,
+                          units_memory = units_memory,
+                          units_time = units_time,
+                          hidden = hidden)
+    }, error = function(e) {
+      # Skip files that can't be parsed (e.g., no autometric data)
+      return(NULL)
+    })
+
     # Skip if empty
     if (is.null(log_data) || nrow(log_data) == 0) {
       return(NULL)
     }
-    
+
     # Add filename and extract SLURM job ID
     log_data$file_name <- basename(f)
     # Extract job ID from crew-JOBID.out pattern
     log_data$slurm_job_id <- sub("crew-([0-9]+)\\.out$", "\\1", basename(f))
-    
+
     return(log_data)
   })
   
