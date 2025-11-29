@@ -146,6 +146,234 @@ parse_target_resources <- function(targets_file) {
     return(result)
 }
 
+#' Summarize resource usage and recommendations for targets
+#'
+#' Analyzes autometric logs and compares actual resource usage against configured
+#' controllers to generate optimization recommendations for each target.
+#'
+#' @param path Path to _targets/logs directory. If NULL, uses default location.
+#' @param targets_file Path to _targets.R file. If NULL, auto-detects from path.
+#'
+#' @return A data frame with columns:
+#'   - target: Target name
+#'   - current_controller: Configured controller (or "unknown")
+#'   - peak_memory_gb: Peak memory usage in GB
+#'   - peak_cpu_pct: Peak CPU usage percentage
+#'   - duration_min: Duration in minutes
+#'   - recommended_controller: Optimal controller based on usage
+#'   - status: "ok", "underprovisioned", "overprovisioned", or "unknown"
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Get recommendations for all targets
+#' summary <- summarize_resource_usage()
+#' print(summary)
+#'
+#' # Filter to targets that need adjustment
+#' summary[summary$status != "ok", ]
+#' }
+summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
+    # Load log data
+    logs <- read_targets_logs(path)
+
+    # Add clean phase names
+    logs <- logs |>
+        dplyr::mutate(clean_phase_name = clean_phase_name(phase))
+
+    # Find and parse _targets.R
+    if (is.null(targets_file)) {
+        targets_file <- find_targets_file(path)
+    }
+    target_resources <- parse_target_resources(targets_file)
+
+    # Get controller specs
+    controllers <- autometric_hprcc_controllers()
+
+    # Analyze each unique phase
+    phases <- unique(logs$clean_phase_name)
+    phases <- phases[phases != "__DEFAULT__"]
+
+    results <- lapply(phases, function(phase_name) {
+        phase_data <- logs[logs$clean_phase_name == phase_name, ]
+
+        # Skip if no data
+        if (nrow(phase_data) == 0) {
+            return(NULL)
+        }
+
+        # Get current controller from mapping
+        current_controller_name <- if (phase_name %in% names(target_resources)) {
+            target_resources[[phase_name]]
+        } else {
+            "unknown"
+        }
+
+        # Find current controller specs
+        current_controller <- NULL
+        if (current_controller_name != "unknown") {
+            for (ctrl in controllers) {
+                if (ctrl$name == current_controller_name) {
+                    current_controller <- ctrl
+                    break
+                }
+            }
+        }
+
+        # Calculate resource usage
+        analysis <- phase_data |>
+            dplyr::group_by(slurm_job_id) |>
+            dplyr::summarise(
+                peak_mem_gb = max(resident) / 1024,
+                peak_cpu = max(cpu),
+                duration_min = diff(range(time)) / 60,
+                .groups = "drop"
+            )
+
+        peak_memory <- max(analysis$peak_mem_gb)
+        peak_cpu <- max(analysis$peak_cpu)
+        duration <- max(analysis$duration_min)
+
+        # Find optimal controller
+        recommended <- controllers[[1]]
+        for (ctrl in controllers) {
+            if (ctrl$memory_gigabytes >= peak_memory &&
+                ctrl$cpus >= max(1, ceiling(peak_cpu / 100 * 8)) &&
+                ctrl$walltime_minutes >= duration) {
+                recommended <- ctrl
+                break
+            }
+        }
+
+        # Determine status
+        # Default controller for hprcc is "small"
+        default_controller <- "small"
+
+        status <- if (current_controller_name == "unknown") {
+            # If not in _targets.R, check if default would be appropriate
+            if (recommended$name == default_controller) {
+                "ok"  # Default is sufficient, no action needed
+            } else {
+                "unknown"  # Needs explicit resources= set
+            }
+        } else if (is.null(current_controller)) {
+            "unknown"
+        } else if (recommended$name == current_controller_name) {
+            "ok"
+        } else {
+            # Compare controller "sizes" based on memory
+            current_mem <- current_controller$memory_gigabytes
+            recommended_mem <- recommended$memory_gigabytes
+            if (recommended_mem < current_mem) {
+                "overprovisioned"
+            } else {
+                "underprovisioned"
+            }
+        }
+
+        data.frame(
+            target = phase_name,
+            current_controller = current_controller_name,
+            peak_memory_gb = round(peak_memory, 2),
+            peak_cpu_pct = round(peak_cpu, 1),
+            duration_min = round(duration, 1),
+            recommended_controller = recommended$name,
+            status = status,
+            stringsAsFactors = FALSE
+        )
+    })
+
+    # Combine results
+    result <- do.call(rbind, results)
+
+    # Sort by status (issues first) then by target name
+    status_order <- c("underprovisioned", "overprovisioned", "unknown", "ok")
+    result$status_order <- match(result$status, status_order)
+    result <- result[order(result$status_order, result$target), ]
+    result$status_order <- NULL
+
+    rownames(result) <- NULL
+    return(result)
+}
+
+#' Print resource usage recommendations
+#'
+#' Prints a formatted summary of resource usage and recommendations for targets.
+#' Useful for reviewing before updating _targets.R.
+#'
+#' @param path Path to _targets/logs directory. If NULL, uses default location.
+#' @param targets_file Path to _targets.R file. If NULL, auto-detects from path.
+#' @param show_ok Logical, whether to show targets with status "ok". Default FALSE.
+#'
+#' @return Invisibly returns the summary data frame.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' # Print only targets needing adjustment
+#' print_resource_recommendations()
+#'
+#' # Print all targets including those that are ok
+#' print_resource_recommendations(show_ok = TRUE)
+#' }
+print_resource_recommendations <- function(path = NULL, targets_file = NULL, show_ok = FALSE) {
+    summary <- summarize_resource_usage(path, targets_file)
+
+    if (!show_ok) {
+        summary <- summary[summary$status != "ok", ]
+    }
+
+    if (nrow(summary) == 0) {
+        cat("All targets are appropriately provisioned.\n")
+        return(invisible(summary))
+    }
+
+    cat("Resource Usage Recommendations\n")
+    cat("==============================\n\n")
+
+    for (i in seq_len(nrow(summary))) {
+        row <- summary[i, ]
+
+        # Status indicator
+        status_icon <- switch(row$status,
+            "underprovisioned" = "[!]",
+            "overprovisioned" = "[>]",
+            "unknown" = "[?]",
+            "ok" = "[ok]"
+        )
+
+        cat(sprintf("%s %s\n", status_icon, row$target))
+        cat(sprintf("    Current:     %s\n", row$current_controller))
+        cat(sprintf("    Recommended: %s\n", row$recommended_controller))
+        cat(sprintf("    Usage: %.1f GB memory, %.0f%% CPU, %.1f min\n",
+                    row$peak_memory_gb, row$peak_cpu_pct, row$duration_min))
+
+        # Suggestion for _targets.R
+        default_controller <- "small"
+        if (row$status != "ok" && row$current_controller != "unknown") {
+            if (row$recommended_controller == default_controller) {
+                cat(sprintf("    -> Remove resources (default %s is sufficient)\n", default_controller))
+            } else {
+                cat(sprintf("    -> Change: resources = %s\n", row$recommended_controller))
+            }
+        } else if (row$current_controller == "unknown") {
+            if (row$recommended_controller == default_controller) {
+                cat(sprintf("    -> OK: default (%s) is sufficient\n", default_controller))
+            } else {
+                cat(sprintf("    -> Add: resources = %s\n", row$recommended_controller))
+            }
+        }
+        cat("\n")
+    }
+
+    cat("Legend: [!] underprovisioned, [>] overprovisioned, [?] unknown, [ok] appropriate\n")
+    cat(sprintf("Default controller: %s\n", "small"))
+
+    invisible(summary)
+}
+
 ### globals
 utils::globalVariables(c(
   "slurm_job_id", "time", "time_bin", "min_val", "max_val", "mean_val"
