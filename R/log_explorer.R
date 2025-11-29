@@ -4,6 +4,9 @@
 #' @importFrom stats density
 NULL
 
+# Default controller for hprcc crew workers when no resources= specified
+DEFAULT_CONTROLLER <- "small"
+
 #' Remove hash suffix from phase name
 #' 
 #' @param phase Character vector of phase names with IDs
@@ -204,7 +207,7 @@ summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
         }
 
         # Get current controller from mapping
-        current_controller_name <- if (phase_name %in% names(target_resources)) {
+        current_controller_name <- if (!is.na(phase_name) && phase_name %in% names(target_resources)) {
             target_resources[[phase_name]]
         } else {
             "unknown"
@@ -218,6 +221,12 @@ summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
                     current_controller <- ctrl
                     break
                 }
+            }
+            if (is.null(current_controller)) {
+                warning(sprintf(
+                    "Unrecognized controller '%s' for target '%s'",
+                    current_controller_name, phase_name
+                ))
             }
         }
 
@@ -243,10 +252,12 @@ summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
         safe_memory <- peak_memory * safety_margin
 
         # Find optimal controller
+        # CPU percentage represents usage across all cores (e.g., 200% = 2 cores)
+        required_cpus <- max(1L, ceiling(peak_cpu / 100))
         recommended <- controllers[[1]]
         for (ctrl in controllers) {
             if (ctrl$memory_gigabytes >= safe_memory &&
-                ctrl$cpus >= max(1, ceiling(peak_cpu / 100 * 8)) &&
+                ctrl$cpus >= required_cpus &&
                 ctrl$walltime_minutes >= duration) {
                 recommended <- ctrl
                 break
@@ -254,8 +265,7 @@ summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
         }
 
         # Determine status
-        # Default controller for hprcc is "small"
-        default_controller <- "small"
+        default_controller <- DEFAULT_CONTROLLER
 
         status <- if (current_controller_name == "unknown") {
             # If not in _targets.R, check if default would be appropriate
@@ -290,6 +300,24 @@ summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
             stringsAsFactors = FALSE
         )
     })
+
+    # Filter out NULL results (targets that couldn't be processed)
+    results <- results[!sapply(results, is.null)]
+
+    # Handle case where no valid results
+    if (length(results) == 0) {
+        message("No targets could be analyzed. Check that log files contain valid autometric data.")
+        return(data.frame(
+            target = character(),
+            current_controller = character(),
+            peak_memory_gb = numeric(),
+            peak_cpu_pct = numeric(),
+            duration_min = numeric(),
+            recommended_controller = character(),
+            status = character(),
+            stringsAsFactors = FALSE
+        ))
+    }
 
     # Combine results
     result <- do.call(rbind, results)
@@ -358,7 +386,7 @@ print_resource_recommendations <- function(path = NULL, targets_file = NULL, sho
                     row$peak_memory_gb, row$peak_cpu_pct, row$duration_min))
 
         # Suggestion for _targets.R
-        default_controller <- "small"
+        default_controller <- DEFAULT_CONTROLLER
         if (row$status != "ok" && row$current_controller != "unknown") {
             if (row$recommended_controller == default_controller) {
                 cat(sprintf("    -> Remove resources (default %s is sufficient)\n", default_controller))
@@ -376,7 +404,7 @@ print_resource_recommendations <- function(path = NULL, targets_file = NULL, sho
     }
 
     cat("Legend: [!] underprovisioned, [>] overprovisioned, [?] unknown, [ok] appropriate\n")
-    cat(sprintf("Default controller: %s\n", "small"))
+    cat(sprintf("Default controller: %s\n", DEFAULT_CONTROLLER))
 
     invisible(summary)
 }
@@ -453,7 +481,7 @@ utils::globalVariables(c(
 #'
 #' @param path Path to _targets/logs directory. If NULL, will attempt to find logs in default location
 #' @param targets_file Path to _targets.R file for reading target resource configurations.
-#'   If NULL, will attempt to auto-detect from path or _targets.yaml.
+#'   If NULL, will attempt to auto-detect from path.
 #'
 #' @return A Shiny application object
 #'
@@ -482,7 +510,7 @@ explore_logs <- function(path = NULL, targets_file = NULL) {
 
   # Find and parse _targets.R for target-to-controller mapping
   if (is.null(targets_file)) {
-      targets_file <- find_targets_file(path)
+    targets_file <- find_targets_file(path)
   }
   target_resources <- parse_target_resources(targets_file)
   
