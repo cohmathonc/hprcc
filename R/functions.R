@@ -130,13 +130,6 @@ get_cluster <- function() {
 #'                               slurm_partition = "gpu-a100")
 #'  }
 #' }
-#'
-#' # Retry controller with escalating resources
-#' \dontrun{
-#' retry_ctrl <- create_controller("retry",
-#'                               slurm_cpus = c(2, 4, 8),
-#'                               slurm_mem_gigabytes = c(8, 16, 32))
-#' }
 #' @importFrom glue glue
 #' @importFrom here here
 #' @importFrom crew.cluster crew_controller_slurm
@@ -429,12 +422,6 @@ configure_targets_options <- function() {
             slurm_cpus = 40L,
             slurm_mem_gigabytes = 200L,
             slurm_walltime_minutes = 120L
-        ),
-        create_controller(
-            "retry",
-            slurm_cpus = c(2L, 4L, 8L, 20L, 40L),
-            slurm_mem_gigabytes = c(8L, 20L, 40L, 80L, 120L, 200L),
-            slurm_walltime_minutes = c(60L, 360L, 360L, 720L, 720L)
         )
     )
 

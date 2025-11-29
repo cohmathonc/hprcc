@@ -84,11 +84,10 @@ When you load **hprcc**, it automatically configures {targets} with SLURM-friend
   - `tiny`: 2 cores, 8GB RAM, 1 hour max 
   - `small`: 2 cores, 20GB RAM, 6 hours max (default)
   - `medium`: 4 cores, 40GB RAM, 6 hours max
-  - `large`: 8 cores, 80GB RAM, 6 hours max 
+  - `large`: 8 cores, 80GB RAM, 6 hours max
   - `xlarge`: 20 cores, 200GB RAM, 12 hours max
   - `huge`: 40 cores, 200GB RAM, 2 hours max
   - `large_mem`: 8 cores, 800GB RAM, 6 hours max (for memory-intensive jobs)
-  - `retry`: Automatically retries failed jobs with increasing resources
 
 On the Gemini cluster, GPU nodes are also available:
 
