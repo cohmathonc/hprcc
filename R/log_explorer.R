@@ -235,10 +235,17 @@ summarize_resource_usage <- function(path = NULL, targets_file = NULL) {
         peak_cpu <- max(analysis$peak_cpu)
         duration <- max(analysis$duration_min)
 
+        # Apply safety margin (1.3x) to account for:
+        # - Parallel worker overhead (BiocParallel/SnowParam spawn child processes)
+        # - Memory spikes between autometric samples
+        # - General headroom to avoid OOM kills
+        safety_margin <- 1.3
+        safe_memory <- peak_memory * safety_margin
+
         # Find optimal controller
         recommended <- controllers[[1]]
         for (ctrl in controllers) {
-            if (ctrl$memory_gigabytes >= peak_memory &&
+            if (ctrl$memory_gigabytes >= safe_memory &&
                 ctrl$cpus >= max(1, ceiling(peak_cpu / 100 * 8)) &&
                 ctrl$walltime_minutes >= duration) {
                 recommended <- ctrl
