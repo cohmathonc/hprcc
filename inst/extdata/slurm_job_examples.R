@@ -60,6 +60,19 @@ get_cellbender_version <- function(working_dir) {
     )
 }
 
+# Test GPU partition submission (checks nvidia-smi in container)
+test_gpu_container <- function(working_dir) {
+    run_singularity_job(
+        name = "gpu_test",
+        container = containers$cellbender,
+        command = "nvidia-smi > gpu_info.txt 2>&1",
+        working_dir = working_dir,
+        completion_files = "gpu_info.txt",
+        slurm_options = list(time = "00:10:00", mem = "8G", cpus_per_task = 2L),
+        gpu = TRUE # Sets partition=gpu-a100, gres=gpu:1, --nv flag
+    )
+}
+
 # =============================================================================
 # Example 2: Cell Ranger count (10X Genomics)
 # =============================================================================
