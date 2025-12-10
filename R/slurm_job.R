@@ -113,8 +113,16 @@ run_slurm_job <- function(
 
     # 5. Submit job
     submit_result <- system2("sbatch", script_path, stdout = TRUE, stderr = TRUE)
-    cli::cli_alert_success("Submitted SLURM job: {name}")
+    exit_status <- attr(submit_result, "status")
 
+    if (!is.null(exit_status) && exit_status != 0) {
+        cli::cli_abort(c(
+            "sbatch failed with exit code {exit_status}",
+            "x" = paste(submit_result, collapse = "\n")
+        ))
+    }
+
+    cli::cli_alert_success("Submitted SLURM job: {name}")
     return(script_path)
 }
 
@@ -202,6 +210,9 @@ run_singularity_job <- function(
 
     # Build bind paths: cluster defaults + user-specified + working_dir
     default_binds <- singularity_bind_dirs()
+    if (is.null(default_binds)) {
+        cli::cli_abort("Cannot determine singularity bind paths. Set SINGULARITY_BIND env var or hprcc.singularity_bind_dirs option.")
+    }
     all_binds <- strsplit(default_binds, ",")[[1]]
 
     if (!is.null(bind_paths)) {
@@ -222,6 +233,9 @@ run_singularity_job <- function(
 
     # Build singularity command
     sing_bin <- singularity_bin()
+    if (is.null(sing_bin)) {
+        cli::cli_abort("Cannot determine singularity binary path. Set SINGULARITY_BIN env var or hprcc.singularity_bin option.")
+    }
     nv_flag <- if (gpu) "--nv " else ""
 
     full_command <- sprintf(
@@ -239,8 +253,8 @@ run_singularity_job <- function(
         slurm_options$partition <- slurm_options$partition %||% "gpu-a100"
     }
 
-    # Ensure singularity module is loaded
-    modules <- unique(c("singularity", slurm_options$modules_to_load))
+    # Ensure singularity module is loaded (prepend to any user-provided modules)
+    modules <- "singularity"
 
     run_slurm_job(
         name = name,
