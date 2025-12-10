@@ -11,6 +11,7 @@ URL: http://cgt.coh.org/hprcc/
 BugReports: https://github.com/cohmathonc/hprcc/issues
 Imports:
     autometric,
+    cli,
     crew,
     crew.cluster (>= 0.3.3),
     dplyr,
