@@ -29,6 +29,7 @@ cluster's default partition. See \link[=package-options]{package options}.}
 \value{
 Invisibly returns a \code{tar_resources} object for the new controller,
 which can be used directly in \code{\link[targets:tar_target]{targets::tar_target()}} via the \code{resources}
+argument.
 }
 \description{
 Creates a custom SLURM controller and adds it to the existing

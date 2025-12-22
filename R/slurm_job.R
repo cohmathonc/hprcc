@@ -95,7 +95,10 @@ run_slurm_job <- function(
 
     # 3. Create working directory
     if (!dir.exists(working_dir)) {
-        dir.create(working_dir, recursive = TRUE, showWarnings = FALSE)
+        created <- dir.create(working_dir, recursive = TRUE, showWarnings = FALSE)
+        if (!isTRUE(created) && !dir.exists(working_dir)) {
+            cli::cli_abort("Failed to create working directory: {.path {working_dir}}")
+        }
     }
 
     # 4. Generate and write script
@@ -236,15 +239,17 @@ run_singularity_job <- function(
     if (is.null(sing_bin)) {
         cli::cli_abort("Cannot determine singularity binary path. Set SINGULARITY_BIN env var or hprcc.singularity_bin option.")
     }
-    nv_flag <- if (gpu) "--nv " else ""
-
-    full_command <- sprintf(
-        "%s exec %s-B %s %s %s",
-        sing_bin,
-        nv_flag,
-        bind_string,
-        container,
-        command
+    # Build singularity command with proper flag handling
+    full_command <- paste(
+        c(
+            sing_bin,
+            "exec",
+            if (gpu) "--nv" else NULL,
+            "-B", bind_string,
+            container,
+            command
+        ),
+        collapse = " "
     )
 
     # GPU-specific SLURM options
@@ -253,8 +258,8 @@ run_singularity_job <- function(
         slurm_options$partition <- slurm_options$partition %||% "gpu-a100"
     }
 
-    # Ensure singularity module is loaded (prepend to any user-provided modules)
-    modules <- "singularity"
+    # Ensure singularity module is loaded
+    modules <- unique(c("singularity", slurm_options$modules_to_load))
 
     run_slurm_job(
         name = name,
@@ -329,7 +334,7 @@ generate_slurm_script <- function(
         "",
         "# --- Setup ---",
         'echo "Job started on $(hostname) at $(date)"',
-        sprintf("cd %s || exit 1", working_dir)
+        sprintf('cd "%s" || exit 1', working_dir)
     )
 
     # Modules
@@ -344,7 +349,7 @@ generate_slurm_script <- function(
     if (!is.null(env_vars) && length(env_vars) > 0) {
         lines <- c(lines, "", "# --- Environment ---")
         for (var_name in names(env_vars)) {
-            lines <- c(lines, sprintf("export %s=%s", var_name, env_vars[[var_name]]))
+            lines <- c(lines, sprintf('export %s="%s"', var_name, env_vars[[var_name]]))
         }
     }
 

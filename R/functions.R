@@ -222,6 +222,7 @@ create_controller <- function(
 #'
 #' @return Invisibly returns a `tar_resources` object for the new controller,
 #'   which can be used directly in [targets::tar_target()] via the `resources`
+#'   argument.
 #'
 #' @export
 #' @examples
