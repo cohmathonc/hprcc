@@ -26,8 +26,8 @@ test_that("generate_slurm_script creates valid SLURM script", {
     # Check module loading
     expect_match(script, "module load singularity")
 
-    # Check environment variable
-    expect_match(script, "export MY_VAR=value")
+    # Check environment variable (values are quoted)
+    expect_match(script, 'export MY_VAR="value"')
 
     # Check command execution with signal handling
     expect_match(script, "echo 'hello' &")
