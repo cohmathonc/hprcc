@@ -194,6 +194,117 @@ create_controller <- function(
 }
 
 
+#' Add a Custom Controller to the Existing Controller Group
+#'
+#' Creates a custom SLURM controller and adds it to the existing
+#' [crew controller group][crew::crew_controller_group]. This simplifies adding
+#' ad-hoc controllers for jobs with specific resource requirements that don't
+#' match the pre-defined controllers (tiny, small, medium, large, etc.).
+#'
+#' @param name A unique identifier for the controller. Must not conflict with
+#'   existing controller names.
+#' @param slurm_cpus Number of CPU cores allocated to each task.
+#' @param slurm_mem_gigabytes Memory allocated to each task, in gigabytes.
+#' @param slurm_walltime_minutes Maximum allowed execution time per task, in
+#'   minutes. Defaults to 720 (12 hours).
+#' @param slurm_partition SLURM partition for job submission. Defaults to the
+#'   cluster's default partition. See [package options][package-options].
+#'
+#' @details
+#' This function is useful when a project requires custom SLURM resource
+#' configurations beyond the pre-defined controllers. For example, a job might
+#' need more walltime but less memory than the standard `large_mem` controller.
+#'
+#' The function modifies the targets controller group in place by calling
+#' [targets::tar_option_set()]. It must be called after loading the hprcc
+#' package (which sets up the default controller group) and before defining
+#' targets that use the custom controller.
+#'
+#' @return Invisibly returns a `tar_resources` object for the new controller,
+#'   which can be used directly in [targets::tar_target()] via the `resources`
+#'   argument.
+#'
+#' @export
+#' @examples
+#' \dontrun{
+#' library(hprcc)
+#' library(targets)
+#'
+#' # Add a custom controller for long-running jobs
+#' singler_resources <- add_controller(
+#'     name = "singler",
+#'     slurm_cpus = 16L,
+#'     slurm_mem_gigabytes = 200L,
+#'     slurm_walltime_minutes = 720L,
+#'     slurm_partition = "bigmem"
+#' )
+#'
+#' # Use in a target
+#' tar_target(
+#'     annotated_cells,
+#'     annotate_with_singler(sce),
+#'     resources = singler_resources
+#' )
+#' }
+#' @seealso [create_controller()] for the underlying controller creation,
+#'   [SLURM-Resource-Configurations] for pre-defined resource shortcuts.
+add_controller <- function(
+    name,
+    slurm_cpus,
+    slurm_mem_gigabytes,
+    slurm_walltime_minutes = 720L,
+    slurm_partition = default_partition()
+) {
+    # Create the new controller
+    new_controller <- create_controller(
+        name = name,
+        slurm_cpus = slurm_cpus,
+        slurm_mem_gigabytes = slurm_mem_gigabytes,
+        slurm_walltime_minutes = slurm_walltime_minutes,
+        slurm_partition = slurm_partition
+    )
+
+    # Get the existing controller group
+    existing_group <- targets::tar_option_get("controller")
+
+    if (is.null(existing_group)) {
+        cli::cli_abort(c(
+            "No existing controller group found.",
+            "i" = "Make sure {.pkg hprcc} is loaded before calling {.fn add_controller}."
+        ))
+    }
+
+    # Check for duplicate controller names
+    existing_names <- names(existing_group$controllers)
+    if (name %in% existing_names) {
+        cli::cli_abort(c(
+            "Controller {.val {name}} already exists.",
+            "i" = "Choose a unique name for your custom controller.",
+            "i" = "Existing controllers: {.val {existing_names}}"
+        ))
+    }
+
+    # Add the new controller to the list
+    all_controllers <- c(
+        existing_group$controllers,
+        stats::setNames(list(new_controller), name)
+    )
+
+    # Update targets options with the new controller group
+    targets::tar_option_set(
+        controller = do.call(crew::crew_controller_group, unname(all_controllers))
+    )
+
+    cli::cli_alert_success(
+        "Added controller {.val {name}} ({slurm_cpus} CPUs, {slurm_mem_gigabytes}GB, {slurm_walltime_minutes}min)"
+    )
+
+    # Return the tar_resources object for convenient use
+    invisible(targets::tar_resources(
+        crew = targets::tar_resources_crew(controller = name)
+    ))
+}
+
 # Internal functions ---------------------------------------------------------
 
 r_libs_site <- function() {

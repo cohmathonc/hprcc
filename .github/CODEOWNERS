@@ -1,0 +1,5 @@
+# Code owners for hprcc
+# These users/teams will be requested for review and must approve PRs
+
+# Default owners for everything in the repo
+* @cohmathonc/mathonc @drejom
