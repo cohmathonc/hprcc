@@ -6,6 +6,9 @@ Sys.info <- NULL
 Sys.getenv <- NULL
 dir.create <- NULL
 
+# Null-coalescing operator
+`%||%` <- function(x, y) if (is.null(x)) y else x
+
 # ------------------------------------------------------------------------------
 #' Initialize Multisession Computation
 #'

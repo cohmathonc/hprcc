@@ -13,6 +13,7 @@ run_singularity_job(
   bind_paths = NULL,
   gpu = FALSE,
   slurm_options = list(),
+  modules_to_load = NULL,
   env_vars = NULL,
   force_resubmit = FALSE
 )
@@ -45,6 +46,8 @@ and defaults partition to "gpu-a100".}
 \item gres: Generic resources (e.g., "gpu:1")
 \item Additional options passed as --name=value
 }}
+
+\item{modules_to_load}{Character vector. Modules to load (e.g., "singularity").}
 
 \item{env_vars}{Named list. Environment variables to export.}
 

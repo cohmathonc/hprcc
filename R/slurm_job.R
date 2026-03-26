@@ -78,12 +78,11 @@ run_slurm_job <- function(
 
     # 1. Check completion files
     if (!force_resubmit) {
-        for (f in completion_files) {
-            full_path <- file.path(working_dir, f)
-            if (file.exists(full_path)) {
-                cli::cli_alert_success("Job complete: {name}")
-                return(full_path)
-            }
+        full_paths <- file.path(working_dir, completion_files)
+        found <- full_paths[file.exists(full_paths)]
+        if (length(found) > 0L) {
+            cli::cli_alert_success("Job complete: {name}")
+            return(found[[1L]])
         }
     }
 
@@ -94,11 +93,8 @@ run_slurm_job <- function(
     }
 
     # 3. Create working directory
-    if (!dir.exists(working_dir)) {
-        created <- dir.create(working_dir, recursive = TRUE, showWarnings = FALSE)
-        if (!isTRUE(created) && !dir.exists(working_dir)) {
-            cli::cli_abort("Failed to create working directory: {.path {working_dir}}")
-        }
+    if (!dir.create(working_dir, recursive = TRUE, showWarnings = FALSE) && !dir.exists(working_dir)) {
+        cli::cli_abort("Failed to create working directory: {.path {working_dir}}")
     }
 
     # 4. Generate and write script
@@ -198,6 +194,7 @@ run_singularity_job <- function(
     bind_paths = NULL,
     gpu = FALSE,
     slurm_options = list(),
+    modules_to_load = NULL,
     env_vars = NULL,
     force_resubmit = FALSE
 ) {
@@ -259,7 +256,7 @@ run_singularity_job <- function(
     }
 
     # Ensure singularity module is loaded
-    modules <- unique(c("singularity", slurm_options$modules_to_load))
+    modules <- unique(c("singularity", modules_to_load))
 
     run_slurm_job(
         name = name,
@@ -311,8 +308,11 @@ generate_slurm_script <- function(
         account = "account",
         qos = "qos"
     )
+    # Keys that are not SBATCH directives (handled separately)
+    non_sbatch_keys <- character(0)
 
     for (opt_name in names(slurm_options)) {
+        if (opt_name %in% non_sbatch_keys) next
         if (opt_name %in% names(option_map)) {
             sbatch_name <- option_map[[opt_name]]
         } else {
@@ -371,7 +371,3 @@ generate_slurm_script <- function(
 
     paste(lines, collapse = "\n")
 }
-
-
-# Null-coalescing operator (if not already defined)
-`%||%` <- function(x, y) if (is.null(x)) y else x
