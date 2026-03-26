@@ -70,6 +70,5 @@ tar_target(
 }
 }
 \seealso{
-\code{\link[=create_controller]{create_controller()}} for the underlying controller creation,
 \link{SLURM-Resource-Configurations} for pre-defined resource shortcuts.
 }

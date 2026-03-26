@@ -69,3 +69,4 @@ resource paths and setups, simplifying job execution across the two platforms.
 \seealso{
 \code{\link[crew.cluster]{crew_controller_slurm}} for more on SLURM controllers.
 }
+\keyword{internal}

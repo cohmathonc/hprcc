@@ -113,7 +113,7 @@ get_cluster <- function() {
 #' resource paths and setups, simplifying job execution across the two platforms.
 #'
 #' @return A `crew_controller` object, ready to manage SLURM job submissions and monitoring.
-#' @export
+#' @keywords internal
 #' @examples
 #' \dontrun{
 #'  # Basic controller with minimal resources
@@ -164,6 +164,7 @@ create_controller <- function(
         "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
 --env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\
+--env HPRCC_TARGETS_STORE_BASE={HPRCC$store_base} \\
 -B {HPRCC$singularity_bind_dirs} \\
 {HPRCC$singularity_container} \\"
     )
@@ -246,8 +247,7 @@ create_controller <- function(
 #'     resources = singler_resources
 #' )
 #' }
-#' @seealso [create_controller()] for the underlying controller creation,
-#'   [SLURM-Resource-Configurations] for pre-defined resource shortcuts.
+#' @seealso [SLURM-Resource-Configurations] for pre-defined resource shortcuts.
 add_controller <- function(
     name,
     slurm_cpus,
@@ -456,15 +456,21 @@ configure_targets_options <- function() {
     HPRCC$singularity_container <- singularity_container()
 
     HPRCC$use_jobs_dir <- isTRUE(getOption("hprcc.slurm_jobs", FALSE))
-    store_path <- targets::tar_path_store()
-    # Handle relative paths, absolute paths, and tilde paths
-    if (startsWith(store_path, "/")) {
-        store_base <- store_path
-    } else if (startsWith(store_path, "~")) {
-        store_base <- path.expand(store_path)
+    # Workers receive the resolved store base via env var set by the main process
+    if (nzchar(store_base_env <- Sys.getenv("HPRCC_TARGETS_STORE_BASE"))) {
+        store_base <- store_base_env
     } else {
-        store_base <- file.path(getwd(), store_path)
+        store_path <- targets::tar_path_store()
+        # Handle relative paths, absolute paths, and tilde paths
+        if (startsWith(store_path, "/")) {
+            store_base <- store_path
+        } else if (startsWith(store_path, "~")) {
+            store_base <- path.expand(store_path)
+        } else {
+            store_base <- file.path(getwd(), store_path)
+        }
     }
+    HPRCC$store_base <- store_base
     HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir) {
         normalizePath(file.path(store_base, "jobs"), mustWork = FALSE)
     } else {
