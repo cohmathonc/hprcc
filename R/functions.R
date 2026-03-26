@@ -52,7 +52,7 @@
 #' }
 #'
 #' @keywords package
-#' @seealso \code{\link{create_controller}} for creating SLURM job controllers
+#' @seealso \code{\link{add_controller}} for creating SLURM job controllers
 #' @name package-options
 #' @aliases hprcc-package
 NULL
@@ -460,15 +460,10 @@ configure_targets_options <- function() {
     if (nzchar(store_base_env <- Sys.getenv("HPRCC_TARGETS_STORE_BASE"))) {
         store_base <- store_base_env
     } else {
-        store_path <- targets::tar_path_store()
-        # Handle relative paths, absolute paths, and tilde paths
-        if (startsWith(store_path, "/")) {
-            store_base <- store_path
-        } else if (startsWith(store_path, "~")) {
-            store_base <- path.expand(store_path)
-        } else {
-            store_base <- file.path(getwd(), store_path)
-        }
+        store_base <- normalizePath(
+            path.expand(targets::tar_path_store()),
+            mustWork = FALSE
+        )
     }
     HPRCC$store_base <- store_base
     HPRCC$slurm_jobs_dir <- if (HPRCC$use_jobs_dir) {

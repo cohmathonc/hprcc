@@ -139,15 +139,11 @@ test_that("init_multisession sets up future plan correctly in SLURM environment"
 
 # Test for non-SLURM environment
 test_that("init_multisession works correctly outside SLURM environment", {
-    mock_sys_getenv <- function(...) "" # Always return empty string
-    mock_system <- function(...) "16" # 16GB system memory
-
-    withr::with_options(
-        new = list(future.globals.maxSize = NULL),
-        with_mocked_bindings(
-            `Sys.getenv` = mock_sys_getenv,
-            system = mock_system,
-            code = {
+    withr::with_envvar(
+        c(SLURM_JOB_ID = ""),
+        withr::with_options(
+            new = list(future.globals.maxSize = NULL),
+            {
                 init_multisession()
                 expect_true(inherits(future::plan(), "multisession"))
                 # In non-SLURM case, future.globals.maxSize isn't set
