@@ -110,29 +110,24 @@ test_that("slurm_allocation handles partial environment variables", {
 # Tests for init_multisession()
 # Test for SLURM environment
 test_that("init_multisession sets up future plan correctly in SLURM environment", {
-    mock_sys_getenv <- function(...) {
-        args <- list(...)
-        var <- args[[1]]
-        switch(var,
-            "SLURM_JOB_ID" = "123456",
-            "SLURM_CPUS_ON_NODE" = "4",
-            "SLURM_CPUS_PER_TASK" = "",
-            "SLURM_MEM_PER_NODE" = "8192", # 8GB in MB
-            ""
-        )
-    }
-
-    withr::with_options(
-        new = list(future.globals.maxSize = NULL),
-        with_mocked_bindings(
-            Sys.getenv = mock_sys_getenv,
-            code = {
+    withr::with_envvar(
+        c(
+            SLURM_JOB_ID = "123456",
+            SLURM_CPUS_ON_NODE = "4",
+            SLURM_CPUS_PER_TASK = "",
+            SLURM_MEM_PER_NODE = "8192"
+        ),
+        withr::with_options(
+            new = list(
+                future.globals.maxSize = NULL,
+                parallelly.availableCores.methods = "Slurm"
+            ),
+            {
                 init_multisession()
                 expect_true(inherits(future::plan(), "multisession"))
-                # Test memory calculation:
                 # Memory_GB = 8192 MB / 1024 = 8 GB
                 # worker_memory = 8 GB * 1024^3 / 4 CPUs
-                expected_memory <- (8192 / 1024) * 1024^3 / 4 # Convert MB to GB, then to bytes, divide by CPUs
+                expected_memory <- (8192 / 1024) * 1024^3 / 4
                 expect_equal(
                     getOption("future.globals.maxSize"),
                     expected_memory
