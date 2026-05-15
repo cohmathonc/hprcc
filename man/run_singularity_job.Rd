@@ -2,7 +2,7 @@
 % Please edit documentation in R/slurm_job.R
 \name{run_singularity_job}
 \alias{run_singularity_job}
-\title{Submit a Singularity container job via SLURM}
+\title{Submit a Singularity Container Job via SLURM}
 \usage{
 run_singularity_job(
   name,
@@ -27,15 +27,14 @@ run_singularity_job(
 
 \item{working_dir}{Character. Directory for script creation and job execution.}
 
-\item{completion_files}{Character vector. Relative paths from working_dir
-that indicate successful completion. First found file is returned.}
+\item{completion_files}{Character vector. Paths (relative to working_dir or
+absolute) that indicate successful completion. First found file is returned.}
 
 \item{bind_paths}{Character vector. Additional paths to bind into container.
-Merged with cluster defaults (Apollo: /labs,/opt,/ref_genome,/run;
-Gemini: /packages,/run,/ref_genomes,/scratch).}
+Merged with cluster defaults from \code{\link[=singularity_bind_dirs]{singularity_bind_dirs()}}.}
 
-\item{gpu}{Logical. If TRUE, adds --nv flag, sets gres=gpu:1,
-and defaults partition to "gpu-a100".}
+\item{gpu}{Logical. If TRUE, adds \code{--nv} flag, sets \code{gres=gpu:1},
+and selects partition via \code{\link[=choose_gpu_partition]{choose_gpu_partition()}}.}
 
 \item{slurm_options}{Named list. SLURM parameters:
 \itemize{
@@ -44,17 +43,17 @@ and defaults partition to "gpu-a100".}
 \item cpus_per_task: Number of CPUs (integer)
 \item partition: SLURM partition (default from cluster)
 \item gres: Generic resources (e.g., "gpu:1")
-\item Additional options passed as --name=value
+\item dependency: Job dependency string (usually set by \code{\link[=dispatch_with_deps]{dispatch_with_deps()}})
 }}
 
 \item{modules_to_load}{Character vector. Modules to load (e.g., "singularity").}
 
 \item{env_vars}{Named list. Environment variables to export.}
 
-\item{force_resubmit}{Logical. If TRUE, resubmit even if script exists.}
+\item{force_resubmit}{Logical. If TRUE, resubmit even if already submitted.}
 }
 \value{
-Path to completion file (if exists) or script path.
+A \link{slurm_job_result} object.
 }
 \description{
 Convenience wrapper around \code{\link[=run_slurm_job]{run_slurm_job()}} for running commands inside
@@ -62,30 +61,6 @@ Singularity containers. Automatically handles bind paths and GPU settings.
 }
 \examples{
 \dontrun{
-# Cell Ranger count
-tar_target(
-  cellranger_result,
-  run_singularity_job(
-    name = paste0("cellranger_", sample_id),
-    container = "/packages/singularity/shared_cache/cellranger.sif",
-    command = paste(
-      "cellranger count",
-      "--id=", sample_id,
-      "--fastqs=", fastq_dir,
-      "--transcriptome=", ref_dir,
-      "--localcores=$SLURM_CPUS_PER_TASK",
-      "--localmem=58"
-    ),
-    working_dir = file.path(output_dir, sample_id),
-    completion_files = "outs/filtered_feature_bc_matrix.h5",
-    slurm_options = list(time = "24:00:00", cpus_per_task = 8L, mem = "64G")
-  ),
-  pattern = map(sample_id),
-  cue = tar_cue(mode = "always"),
-  deployment = "main"
-)
-
-# GPU job (CellBender)
 tar_target(
   cellbender_result,
   run_singularity_job(

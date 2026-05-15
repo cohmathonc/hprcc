@@ -2,7 +2,7 @@
 % Please edit documentation in R/slurm_job.R
 \name{run_slurm_job}
 \alias{run_slurm_job}
-\title{Submit a SLURM job with completion tracking}
+\title{Submit a SLURM Job with Completion Tracking}
 \usage{
 run_slurm_job(
   name,
@@ -22,8 +22,8 @@ run_slurm_job(
 
 \item{working_dir}{Character. Directory for script creation and job execution.}
 
-\item{completion_files}{Character vector. Relative paths from working_dir
-that indicate successful completion. First found file is returned.}
+\item{completion_files}{Character vector. Paths (relative to working_dir or
+absolute) that indicate successful completion. First found file is returned.}
 
 \item{slurm_options}{Named list. SLURM parameters:
 \itemize{
@@ -32,33 +32,32 @@ that indicate successful completion. First found file is returned.}
 \item cpus_per_task: Number of CPUs (integer)
 \item partition: SLURM partition (default from cluster)
 \item gres: Generic resources (e.g., "gpu:1")
-\item Additional options passed as --name=value
+\item dependency: Job dependency string (usually set by \code{\link[=dispatch_with_deps]{dispatch_with_deps()}})
 }}
 
 \item{modules_to_load}{Character vector. Modules to load (e.g., "singularity").}
 
 \item{env_vars}{Named list. Environment variables to export.}
 
-\item{force_resubmit}{Logical. If TRUE, resubmit even if script exists.}
+\item{force_resubmit}{Logical. If TRUE, resubmit even if already submitted.}
 }
 \value{
-Path to completion file (if exists) or script path.
+A \link{slurm_job_result} object.
 }
 \description{
 Submits a shell command as a SLURM job and tracks completion via output files.
 Implements a "fire and track" pattern for targets integration:
 \enumerate{
-\item Check if completion files exist (job already done) -> return completion path
-\item Check if script exists (job already submitted) -> return script path
-\item Otherwise, create script and submit via sbatch -> return script path
+\item Check if completion files exist (job already done) -> return complete result
+\item Check if script exists with SLURM output (already submitted) -> check status
+\item Otherwise, create script and submit via sbatch -> return submitted result
 }
 }
 \details{
-Use with \code{tar_cue(mode = "always")} and \code{deployment = "main"} in targets.
+Use with \code{cue = tar_cue(mode = "always")} and \code{deployment = "main"} in targets.
 }
 \examples{
 \dontrun{
-# In _targets.R
 tar_target(
   my_job,
   run_slurm_job(
@@ -66,8 +65,7 @@ tar_target(
     command = "python script.py --input data.csv",
     working_dir = "/scratch/user/analysis",
     completion_files = "results/output.csv",
-    slurm_options = list(time = "4:00:00", mem = "32G", cpus_per_task = 4L),
-    modules_to_load = "python/3.10"
+    slurm_options = list(time = "4:00:00", mem = "32G", cpus_per_task = 4L)
   ),
   cue = tar_cue(mode = "always"),
   deployment = "main"

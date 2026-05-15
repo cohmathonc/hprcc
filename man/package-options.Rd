@@ -55,6 +55,6 @@ Default: Dynamically retrieved default partition from SLURM configuration.}
 }
 
 \seealso{
-\code{\link{create_controller}} for creating SLURM job controllers
+\code{\link{add_controller}} for creating SLURM job controllers
 }
 \keyword{package}

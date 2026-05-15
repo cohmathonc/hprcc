@@ -2,7 +2,7 @@
 % Please edit documentation in R/slurm_job.R
 \name{generate_slurm_script}
 \alias{generate_slurm_script}
-\title{Generate SLURM script content}
+\title{Generate SLURM Script Content}
 \usage{
 generate_slurm_script(
   name,
@@ -30,6 +30,6 @@ generate_slurm_script(
 Character string with full script content
 }
 \description{
-Generate SLURM script content
+Generate SLURM Script Content
 }
 \keyword{internal}
