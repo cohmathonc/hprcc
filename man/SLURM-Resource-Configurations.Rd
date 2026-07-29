@@ -8,6 +8,9 @@
 \alias{medium}
 \alias{large}
 \alias{large_mem}
+\alias{large_mem_2x}
+\alias{long}
+\alias{large_mem_xl}
 \alias{xlarge}
 \alias{huge}
 \alias{gpu_medium}
@@ -19,21 +22,33 @@ to very large tasks with high computational demands. Utilizes \code{targets::tar
 with specific controller settings suitable for the respective task sizes.
 }
 \details{
-The available configurations are:\tabular{llll}{
-   Job Type \tab CPUs \tab Memory (GB) \tab Time (minutes) \cr
-   tiny \tab 2 \tab 8 \tab 60 \cr
-   small \tab 2 \tab 20 \tab 360 \cr
-   medium \tab 4 \tab 40 \tab 360 \cr
-   large \tab 8 \tab 80 \tab 360 \cr
-   large_mem \tab 8 \tab 800 \tab 360 \cr
-   xlarge \tab 20 \tab 200 \tab 360 \cr
-   huge \tab 40 \tab 200 \tab 120 \cr
-   gpu_medium^†^ \tab 4 \tab 60 \tab 120 \cr
-   gpu_large^†^ \tab 8 \tab 120 \tab 240 \cr
+The available configurations are:\tabular{lllll}{
+   Job Type \tab CPUs \tab Memory (GB) \tab Time (minutes) \tab Partition \cr
+   tiny \tab 2 \tab 8 \tab 60 \tab compute \cr
+   small \tab 2 \tab 20 \tab 360 \tab compute \cr
+   medium \tab 4 \tab 40 \tab 360 \tab compute \cr
+   large \tab 8 \tab 80 \tab 360 \tab compute \cr
+   large_mem \tab 8 \tab 100 \tab 480 \tab compute \cr
+   large_mem_2x^‡^ \tab 8 \tab 250 / 200 \tab 720 \tab compute \cr
+   long \tab 4 \tab 100 \tab 1440 \tab compute \cr
+   large_mem_xl \tab 8 \tab 600 \tab 2160 \tab bigmem \cr
+   xlarge \tab 20 \tab 200 \tab 720 \tab compute \cr
+   huge \tab 40 \tab 200 \tab 720 \tab compute \cr
+   gpu_medium^†^ \tab 4 \tab 60 \tab 120 \tab gpu-a100,gpu-v100 \cr
+   gpu_large^†^ \tab 8 \tab 120 \tab 240 \tab gpu-a100,gpu-v100 \cr
 }
 
 
 \eqn{^†} GPUs only available on \emph{Gemini}
+
+\eqn{^‡} `large_mem_2x\verb{is 250 GB on _Gemini_ and 200 GB on _Apollo_: apollo's}all` partition has 20 nodes at 239 GB, which a 250 GB request would exclude,
+leaving only 10 candidates. 200 GB keeps all 30.
+
+Use \code{large_mem_2x} for memory up to ~250 GB and \code{long} for targets that run
+more than 8 hours without needing much memory. Reserve \code{large_mem_xl} for work
+genuinely above 250 GB - it is the only tier that leaves the general partition
+(\code{bigmem} has 5 nodes against \code{compute}'s 85), so jobs there can queue for
+days.
 }
 \seealso{
 \code{\link[targets]{tar_resources}}, \code{\link[targets]{tar_resources_crew}}

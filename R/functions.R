@@ -97,6 +97,21 @@ get_cluster <- function() {
 #' @param slurm_walltime_minutes Maximum allowed execution time per task, in minutes. Defaults to 720 (12 hours).
 #' @param slurm_workers Total number of parallel tasks the controller can handle. Defaults to 350.
 #' @param slurm_partition SLURM partition for job submission. Default set by cluster.
+#' @param tasks_max Number of targets a single worker will run before exiting.
+#'   Defaults to `1L`: one task per worker, so each target gets a fresh R process
+#'   sized for it and `slurm_walltime_minutes` means what it says - a per-task
+#'   limit.
+#'
+#'   This was previously unset, taking `crew`'s default of `Inf`, which meant a
+#'   worker kept accepting targets until it idled out or SLURM killed it at the
+#'   walltime. That silently discarded work: a worker would finish target A, start
+#'   target B, and be killed mid-B, so B's hours were lost and it had to be redone
+#'   on a later worker. Observed in a scRNA-seq pipeline where all 6 workers on a
+#'   long-running SCTransform step ended `FAILED` rather than `COMPLETED`, each
+#'   part-way through a second task.
+#'
+#'   Raise it only for many short targets, where process startup dominates and no
+#'   single target comes close to the walltime.
 #' See [package options][package-options] for defaults.
 #'
 #' @details
@@ -140,7 +155,8 @@ create_controller <- function(
     slurm_mem_gigabytes,
     slurm_walltime_minutes = 720L,
     slurm_workers = 350L,
-    slurm_partition = default_partition()
+    slurm_partition = default_partition(),
+    tasks_max = 1L
 ) {
     # GPU check
     if (grepl("gpu", slurm_partition)) {
@@ -162,6 +178,7 @@ create_controller <- function(
         "{HPRCC$slurm_account}\n",
         "cd {getwd()} \n",
         "{HPRCC$singularity_bin} exec {HPRCC$r_libs_user} \\
+--env R_LIBS={HPRCC$r_libs_site}:/usr/local/lib/R/site-library:/usr/local/lib/R/library \\
 --env R_LIBS_SITE={HPRCC$r_libs_site} \\
 --env R_PARALLELLY_AVAILABLECORES_METHODS=Slurm \\
 --env HPRCC_TARGETS_STORE_BASE={HPRCC$store_base} \\
@@ -186,6 +203,7 @@ create_controller <- function(
         workers = slurm_workers,
         seconds_idle = 30L,
         garbage_collection = TRUE,
+        tasks_max = tasks_max,
         options_cluster = slurm_options,
         options_metrics = crew::crew_options_metrics(
             path = "/dev/stdout",
@@ -520,20 +538,74 @@ configure_targets_options <- function() {
         create_controller(
             "large_mem",
             slurm_cpus = 8L,
-            slurm_mem_gigabytes = 800L,
-            slurm_walltime_minutes = 360L,
+            slurm_mem_gigabytes = 100L,
+            slurm_walltime_minutes = 480L
+        ),
+        # Closes the 100 GB -> 600 GB gap reported in #33. Sized from measured
+        # peaks across 1082 crew workers on a scRNA-seq pipeline: p99 was 220 GB
+        # and the highest per-target peak 139 GB, so this covers the real tail
+        # without leaving the general partition. Previously any target over 100 GB
+        # had to jump 6x AND change partition.
+        #
+        # Cluster-gated, because the two clusters' node sizes differ and a tier
+        # that fits one can be a scarcity trap on the other - the same reasoning as
+        # the GPU gate below:
+        #   gemini `compute`: 43 nodes @ 503 GB, 12 @ 754, 30 @ 1007  -> 250 GB
+        #                     schedules on all 85
+        #   apollo  `all`:     7 nodes @  54 GB, 20 @ 239, 5 @ 488, 5 @ 1465
+        #                     -> 250 GB EXCLUDES the 20 mid-tier nodes (239 GB
+        #                        usable), leaving only 10. 200 GB keeps all 30.
+        create_controller(
+            "large_mem_2x",
+            slurm_cpus = 8L,
+            slurm_mem_gigabytes = if (get_cluster() == "apollo") 200L else 250L,
+            slurm_walltime_minutes = 720L
+        ),
+        # The other half of #33: a long-running target that is NOT memory-hungry
+        # had no tier. Stock walltimes top out at 480 min on `compute`, so a
+        # 12-hour step was forced onto large_mem_xl purely for its duration - and
+        # dragged a 600 GB bigmem reservation with it, which then triggers
+        # MaxMemoryPerAccount and throttles the same pipeline's other workers.
+        #
+        # 4 CPUs deliberately: the motivating workload (SCTransform per library)
+        # measured 22.7 GB peak and 49.8% of ONE core over 712 minutes. It is
+        # `future`-aware but parallelising it is counterproductive - on a
+        # 4000-cell subset, sequential 34.7 s vs 4 workers 166.7 s (4.8x slower),
+        # 8 workers OOM-killed, because future_lapply serialises the full model to
+        # each worker. Many Seurat/Bioconductor steps are single-threaded like
+        # this, so an 8- or 20-CPU tier wastes allocation and inflates the billing
+        # weight that drives account limits.
+        create_controller(
+            "long",
+            slurm_cpus = 4L,
+            slurm_mem_gigabytes = 100L,
+            slurm_walltime_minutes = 1440L
+        ),
+        # 2160 min (36h) is within bigmem's MaxTime of 2-00:00:00 and no QOS caps
+        # it lower (cpubased allows 14 days), but it had never actually been
+        # exercised: the installed 0.1.0 still had 720, so every large_mem_xl
+        # worker to date was generated with `#SBATCH --time=720` and reported
+        # Timelimit=12:00:00. Issue #33 read that as SLURM silently overriding the
+        # request; it was simply the older installed value. Verified against the
+        # generated job scripts, not inferred.
+        create_controller(
+            "large_mem_xl",
+            slurm_cpus = 8L,
+            slurm_mem_gigabytes = 600L,
+            slurm_walltime_minutes = 2160L,
             slurm_partition = ifelse(get_cluster() == "apollo", "all", "bigmem")
         ),
         create_controller(
             "xlarge",
             slurm_cpus = 20L,
-            slurm_mem_gigabytes = 200L
+            slurm_mem_gigabytes = 200L,
+            slurm_walltime_minutes = 720L
         ),
         create_controller(
             "huge",
             slurm_cpus = 40L,
             slurm_mem_gigabytes = 200L,
-            slurm_walltime_minutes = 120L
+            slurm_walltime_minutes = 720L
         )
     )
 
