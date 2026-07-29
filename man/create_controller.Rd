@@ -10,7 +10,8 @@ create_controller(
   slurm_mem_gigabytes,
   slurm_walltime_minutes = 720L,
   slurm_workers = 350L,
-  slurm_partition = default_partition()
+  slurm_partition = default_partition(),
+  tasks_max = 1L
 )
 }
 \arguments{
@@ -24,7 +25,23 @@ create_controller(
 
 \item{slurm_workers}{Total number of parallel tasks the controller can handle. Defaults to 350.}
 
-\item{slurm_partition}{SLURM partition for job submission. Default set by cluster.
+\item{slurm_partition}{SLURM partition for job submission. Default set by cluster.}
+
+\item{tasks_max}{Number of targets a single worker will run before exiting.
+Defaults to \code{1L}: one task per worker, so each target gets a fresh R process
+sized for it and \code{slurm_walltime_minutes} means what it says - a per-task
+limit.
+
+This was previously unset, taking \code{crew}'s default of \code{Inf}, which meant a
+worker kept accepting targets until it idled out or SLURM killed it at the
+walltime. That silently discarded work: a worker would finish target A, start
+target B, and be killed mid-B, so B's hours were lost and it had to be redone
+on a later worker. Observed in a scRNA-seq pipeline where all 6 workers on a
+long-running SCTransform step ended \code{FAILED} rather than \code{COMPLETED}, each
+part-way through a second task.
+
+Raise it only for many short targets, where process startup dominates and no
+single target comes close to the walltime.
 See \link[=package-options]{package options} for defaults.}
 }
 \value{
