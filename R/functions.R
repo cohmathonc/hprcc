@@ -581,6 +581,13 @@ configure_targets_options <- function() {
             slurm_mem_gigabytes = 100L,
             slurm_walltime_minutes = 1440L
         ),
+        # 2160 min (36h) is within bigmem's MaxTime of 2-00:00:00 and no QOS caps
+        # it lower (cpubased allows 14 days), but it had never actually been
+        # exercised: the installed 0.1.0 still had 720, so every large_mem_xl
+        # worker to date was generated with `#SBATCH --time=720` and reported
+        # Timelimit=12:00:00. Issue #33 read that as SLURM silently overriding the
+        # request; it was simply the older installed value. Verified against the
+        # generated job scripts, not inferred.
         create_controller(
             "large_mem_xl",
             slurm_cpus = 8L,
