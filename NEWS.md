@@ -17,6 +17,14 @@ of tasks.
 Raise it explicitly for many short targets, where process startup dominates and
 no single target approaches the walltime.
 
+## Also in this release
+
+`create_controller()`'s singularity invocation now sets `R_LIBS` alongside the
+existing `R_LIBS_SITE`, putting the bioc library ahead of the container's baked-in
+`/usr/local/lib/R/site-library`. That library ships a stale `rlang` (1.1.6) which
+otherwise shadows the newer one and breaks packages requiring >= 1.1.7 with
+`namespace 'rlang' 1.1.6 is already loaded`.
+
 ## New resource tiers (closes #33)
 
 Two gaps in the catalogue, both sized from measured `MaxRSS` across 1082 crew

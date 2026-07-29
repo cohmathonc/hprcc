@@ -20,13 +20,24 @@ You can easily configure your own SLURM resource requests (CPU, RAM, walltime) t
 | medium            | 4    | 40          | 360            | compute           |
 | large             | 8    | 80          | 360            | compute           |
 | large_mem         | 8    | 100         | 480            | compute           |
-| large_mem_xl      | 8    | 600         | 720            | bigmem            |
+| large_mem_2x^‡^   | 8    | 250 / 200   | 720            | compute           |
+| long              | 4    | 100         | 1440           | compute           |
+| large_mem_xl      | 8    | 600         | 2160           | bigmem            |
 | xlarge            | 20   | 200         | 720            | compute           |
 | huge              | 40   | 200         | 720            | compute           |
 | gpu_medium^†^     | 4    | 60          | 120            | gpu-a100,gpu-v100 |
 | gpu_large^†^      | 8    | 120         | 240            | gpu-a100,gpu-v100 |
 
 ^†^ GPUs only available on _Gemini_
+
+^‡^ `large_mem_2x` is 250 GB on _Gemini_ and 200 GB on _Apollo_: apollo's `all`
+partition has 20 nodes at 239 GB, which a 250 GB request would exclude, leaving
+only 10 candidates.
+
+Use `large_mem_2x` for memory up to ~250 GB and `long` for targets running more
+than 8 hours without needing much memory. Reserve `large_mem_xl` for work
+genuinely above 250 GB — it is the only tier that leaves the general partition
+(`bigmem` has 5 nodes against `compute`'s 85), so jobs there can queue for days.
 
 For a complete list of configurable settings refer to the [package options](reference/package-options.html).
 
