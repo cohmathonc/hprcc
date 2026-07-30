@@ -2,13 +2,19 @@
 # Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
 on:
   push:
+    # `main` as well as tags: a tags-only trigger meant commits merged to main
+    # were never checked. 5f62b8e sat on main unverified until tagging v0.2.0
+    # surfaced 6 test failures and 2 R CMD check warnings it had introduced -
+    # by which point the release was already cut.
+    branches:
+      - main
     tags:
       - "*"
   release:
     types: [published]
-  pull_request:  # Add this section
+  pull_request:
     branches:
-      - main  # Specify the branch(es) for which pull requests should trigger the action
+      - main
 
 name: R-CMD-check
 
