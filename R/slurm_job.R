@@ -250,10 +250,21 @@ run_singularity_job <- function(
     }
 
     # Build bind paths: cluster defaults + user-specified
-    default_binds <- tryCatch(
-        strsplit(singularity_bind_dirs(), ",")[[1]],
-        error = function(e) c("/scratch", "/packages", "/ref_genomes")
-    )
+    #
+    # NULL is not the same as an error here. singularity_bind_dirs() returns NULL
+    # off a recognised cluster, and strsplit(NULL, ",") yields an empty list
+    # rather than raising - so the tryCatch fallback never fired and the job was
+    # submitted with no bind paths at all, failing later inside the container
+    # with a missing-file error far from its cause.
+    raw_binds <- tryCatch(singularity_bind_dirs(), error = function(e) NULL)
+    if (is.null(raw_binds) || !nzchar(paste(raw_binds, collapse = ""))) {
+        cli::cli_abort(c(
+            "Cannot determine singularity bind paths for this cluster.",
+            "i" = "Set {.code options(hprcc.bind_dirs = ...)} or pass
+                   {.arg bind_paths} explicitly."
+        ))
+    }
+    default_binds <- strsplit(raw_binds, ",")[[1]]
     all_binds <- unique(c(default_binds, bind_paths))
     all_binds <- all_binds[dir.exists(all_binds)]
 
@@ -269,8 +280,16 @@ run_singularity_job <- function(
 
     bind_string <- paste(all_binds, collapse = ",")
 
-    # Build singularity command
-    sing_bin <- tryCatch(singularity_bin(), error = function(e) "singularity")
+    # Build singularity command. As above, NULL is a real answer rather than an
+    # error, and falling back to a bare "singularity" would only fail once the
+    # job reached a compute node - the binary is not on PATH there.
+    sing_bin <- tryCatch(singularity_bin(), error = function(e) NULL)
+    if (is.null(sing_bin) || !nzchar(sing_bin)) {
+        cli::cli_abort(c(
+            "Cannot determine singularity binary path for this cluster.",
+            "i" = "Set {.code options(hprcc.singularity_bin = ...)}."
+        ))
+    }
 
     full_command <- paste(
         c(

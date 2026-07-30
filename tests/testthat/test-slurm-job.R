@@ -1,6 +1,17 @@
 library(testthat)
 library(hprcc)
 
+# Three tests below reach run_slurm_job()/run_singularity_job() past their
+# early-return guards, at which point they shell out to `sbatch`. That is fine on
+# a cluster and fatal in CI, where sbatch does not exist and system2() raises
+# "error in running command" - a failure about the environment, not the code.
+skip_if_no_sbatch <- function() {
+    testthat::skip_if(
+        nzchar(Sys.which("sbatch")) == FALSE,
+        "sbatch not available - cannot exercise real job submission"
+    )
+}
+
 # Tests for generate_slurm_script() (internal helper)
 test_that("generate_slurm_script creates valid SLURM script", {
     script <- hprcc:::generate_slurm_script(
@@ -21,7 +32,10 @@ test_that("generate_slurm_script creates valid SLURM script", {
     expect_match(script, "#SBATCH --mem=4G")
     expect_match(script, "#SBATCH --cpus-per-task=2")
     expect_match(script, "#SBATCH --output=/tmp/test/slurm-%j.out")
-    expect_match(script, "#SBATCH --error=/tmp/test/slurm-%j.err")
+    # stderr is deliberately merged into the same file as stdout, so both
+    # streams stay interleaved in submission order - splitting them makes a
+    # failure's context land in a different file from the error itself.
+    expect_match(script, "#SBATCH --error=/tmp/test/slurm-%j.out")
 
     # Check module loading
     expect_match(script, "module load singularity")
@@ -105,10 +119,14 @@ test_that("run_slurm_job returns completion file if exists", {
         completion_files = "output.txt"
     )
 
-    expect_equal(result, completion_file)
+    # 5f62b8e changed the return type to slurm_job_result for the
+    # fire-and-track pattern; as.character() unwraps it to the path.
+    expect_s3_class(result, "slurm_job_result")
+    expect_equal(as.character(result), completion_file)
 })
 
 test_that("run_slurm_job returns script path if script exists", {
+    skip_if_no_sbatch()
     tmp_dir <- tempfile("slurm_test_")
     dir.create(tmp_dir)
     script_path <- file.path(tmp_dir, "existing_job.sh")
@@ -124,7 +142,9 @@ test_that("run_slurm_job returns script path if script exists", {
         completion_files = "nonexistent.txt"
     )
 
-    expect_equal(result, script_path)
+    # 5f62b8e wraps the return in slurm_job_result; as.character() unwraps it.
+    expect_s3_class(result, "slurm_job_result")
+    expect_equal(as.character(result), script_path)
 })
 
 # Tests for run_singularity_job() input validation
@@ -142,6 +162,7 @@ test_that("run_singularity_job validates container exists", {
 })
 
 test_that("run_singularity_job fails gracefully on unknown cluster", {
+    skip_if_no_sbatch()
     # Mock unknown cluster by mocking singularity_bind_dirs to return NULL
     with_mocked_bindings(
         singularity_bind_dirs = function() NULL,
@@ -166,6 +187,7 @@ test_that("run_singularity_job fails gracefully on unknown cluster", {
 })
 
 test_that("run_singularity_job fails gracefully when singularity_bin is NULL", {
+    skip_if_no_sbatch()
     with_mocked_bindings(
         singularity_bind_dirs = function() "/tmp,/data",
         singularity_bin = function() NULL,
@@ -220,7 +242,8 @@ test_that("run_singularity_job sets GPU options when gpu=TRUE", {
                 gpu = TRUE
             )
 
-            expect_equal(result, completion_file)
+            expect_s3_class(result, "slurm_job_result")
+            expect_equal(as.character(result), completion_file)
         }
     )
 })
