@@ -22,7 +22,8 @@ Imports:
     qs2,
     shiny,
     stringr,
-    targets (>= 1.10.0)
+    targets (>= 1.10.0),
+    utils
 Suggests: 
     knitr,
     rmarkdown,

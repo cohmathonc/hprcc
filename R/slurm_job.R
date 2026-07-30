@@ -341,7 +341,7 @@ generate_slurm_script <- function(
     default_part <- tryCatch(default_partition(), error = function(e) NULL)
     defaults <- list(time = "02:00:00", mem = "8G", cpus_per_task = 1L)
     if (!is.null(default_part)) defaults$partition <- default_part
-    opts <- modifyList(defaults, slurm_options)
+    opts <- utils::modifyList(defaults, slurm_options)
 
     # Header
     lines <- c(

@@ -13,17 +13,17 @@
 #' | medium            | 4    | 40                  | 360              | compute          |
 #' | large             | 8    | 80                  | 360              | compute          |
 #' | large_mem         | 8    | 100                 | 480              | compute          |
-#' | large_mem_2x[2]   | 8    | 250 / 200           | 720              | compute          |
+#' | large_mem_2x (b)   | 8    | 250 / 200           | 720              | compute          |
 #' | long              | 4    | 100                 | 1440             | compute          |
 #' | large_mem_xl      | 8    | 600                 | 2160             | bigmem           |
 #' | xlarge            | 20   | 200                 | 720              | compute          |
 #' | huge              | 40   | 200                 | 720              | compute          |
-#' | gpu_medium[1]     | 4    | 60                  | 120              | gpu-a100,gpu-v100|
-#' | gpu_large[1]      | 8    | 120                 | 240              | gpu-a100,gpu-v100|
+#' | gpu_medium (a)       | 4    | 60                  | 120              | gpu-a100,gpu-v100|
+#' | gpu_large (a)         | 8    | 120                 | 240              | gpu-a100,gpu-v100|
 #' 
-#' [1] GPUs only available on _Gemini_
+#' (a) GPUs only available on _Gemini_
 #'
-#' [2] `large_mem_2x` is 250 GB on _Gemini_ and 200 GB on _Apollo_: apollo's
+#' (b) `large_mem_2x` is 250 GB on _Gemini_ and 200 GB on _Apollo_: apollo's
 #' `all` partition has 20 nodes at 239 GB, which a 250 GB request would exclude,
 #' leaving only 10 candidates. 200 GB keeps all 30.
 #'
