@@ -31,7 +31,7 @@ run_singularity_job(
 absolute) that indicate successful completion. First found file is returned.}
 
 \item{bind_paths}{Character vector. Additional paths to bind into container.
-Merged with cluster defaults from \code{\link[=singularity_bind_dirs]{singularity_bind_dirs()}}.}
+Merged with the cluster defaults from \code{singularity_bind_dirs()}.}
 
 \item{gpu}{Logical. If TRUE, adds \code{--nv} flag, sets \code{gres=gpu:1},
 and selects partition via \code{\link[=choose_gpu_partition]{choose_gpu_partition()}}.}

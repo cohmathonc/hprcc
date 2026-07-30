@@ -29,19 +29,20 @@ The available configurations are:\tabular{lllll}{
    medium \tab 4 \tab 40 \tab 360 \tab compute \cr
    large \tab 8 \tab 80 \tab 360 \tab compute \cr
    large_mem \tab 8 \tab 100 \tab 480 \tab compute \cr
-   large_mem_2x^‡^ \tab 8 \tab 250 / 200 \tab 720 \tab compute \cr
+   large_mem_2x\link{2} \tab 8 \tab 250 / 200 \tab 720 \tab compute \cr
    long \tab 4 \tab 100 \tab 1440 \tab compute \cr
    large_mem_xl \tab 8 \tab 600 \tab 2160 \tab bigmem \cr
    xlarge \tab 20 \tab 200 \tab 720 \tab compute \cr
    huge \tab 40 \tab 200 \tab 720 \tab compute \cr
-   gpu_medium^†^ \tab 4 \tab 60 \tab 120 \tab gpu-a100,gpu-v100 \cr
-   gpu_large^†^ \tab 8 \tab 120 \tab 240 \tab gpu-a100,gpu-v100 \cr
+   gpu_medium\link{1} \tab 4 \tab 60 \tab 120 \tab gpu-a100,gpu-v100 \cr
+   gpu_large\link{1} \tab 8 \tab 120 \tab 240 \tab gpu-a100,gpu-v100 \cr
 }
 
 
-\eqn{^†} GPUs only available on \emph{Gemini}
+\link{1} GPUs only available on \emph{Gemini}
 
-\eqn{^‡} `large_mem_2x\verb{is 250 GB on _Gemini_ and 200 GB on _Apollo_: apollo's}all` partition has 20 nodes at 239 GB, which a 250 GB request would exclude,
+\link{2} \code{large_mem_2x} is 250 GB on \emph{Gemini} and 200 GB on \emph{Apollo}: apollo's
+\code{all} partition has 20 nodes at 239 GB, which a 250 GB request would exclude,
 leaving only 10 candidates. 200 GB keeps all 30.
 
 Use \code{large_mem_2x} for memory up to ~250 GB and \code{long} for targets that run

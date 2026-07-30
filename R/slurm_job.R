@@ -196,7 +196,7 @@ run_slurm_job <- function(
 #' @param container Character. Path to the Singularity .sif file.
 #' @param command Character. Command to run inside the container.
 #' @param bind_paths Character vector. Additional paths to bind into container.
-#'   Merged with cluster defaults from [singularity_bind_dirs()].
+#'   Merged with the cluster defaults from `singularity_bind_dirs()`.
 #' @param gpu Logical. If TRUE, adds `--nv` flag, sets `gres=gpu:1`,
 #'   and selects partition via [choose_gpu_partition()].
 #'

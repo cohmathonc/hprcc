@@ -58,9 +58,9 @@ as.character.slurm_job_result <- function(x, ...) x$path
 #' @export
 print.slurm_job_result <- function(x, ...) {
     status_icon <- switch(x$status,
-        complete = cli::col_green("✔"),
-        submitted = cli::col_yellow("▶"),
-        already_submitted = cli::col_blue("▶"),
+        complete = cli::col_green("\u2714"),
+        submitted = cli::col_yellow("\u25b6"),
+        already_submitted = cli::col_blue("\u25b6"),
         cli::col_red("?")
     )
     cli::cli_text("{status_icon} {.path {basename(x$path)}} [{x$status}]")
