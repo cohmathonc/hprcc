@@ -1,3 +1,15 @@
+# hprcc 0.2.1
+
+- **`large_mem_3x`** (8 CPUs, 550 GB gemini / 450 GB apollo, 12h, `compute`).
+  Added after a second pipeline (`DCD.umass_kent.2025`) reported measured peaks
+  of 437.4 GB and 252 GB - real demand between `large_mem_2x`'s 250 GB and
+  `large_mem_xl`'s 600 GB, which only the bigmem tier spanned. Their cost was
+  concrete: bigmem fully allocated with 10+ queued and a six-day estimated
+  start, for work that would have run immediately on `compute`.
+
+  0.2.0's notes claimed nothing needed more than 250 GB. That was true of the
+  pipeline it was measured on and wrong as a generalisation.
+
 # hprcc 0.2.0
 
 ## Breaking: one task per worker by default (`tasks_max = 1L`)

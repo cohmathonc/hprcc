@@ -26,7 +26,7 @@ test_that("every exported resource shortcut names a registered controller", {
 
     shortcuts <- c(
         "tiny", "small", "medium", "large", "large_mem", "large_mem_2x",
-        "long", "large_mem_xl", "xlarge", "huge"
+        "large_mem_3x", "long", "large_mem_xl", "xlarge", "huge"
     )
 
     for (nm in shortcuts) {
@@ -79,13 +79,19 @@ test_that("large_mem_2x memory fits the target cluster's nodes", {
     mem <- registered[["large_mem_2x"]]$launcher$options_cluster$memory_gigabytes_required
     expected <- if (get_cluster() == "apollo") 200L else 250L
     expect_equal(mem, expected)
+
+    # large_mem_3x likewise: apollo has only 10 nodes at >=488 GB, so 550 would
+    # be a scarcity trap there.
+    mem3 <- registered[["large_mem_3x"]]$launcher$options_cluster$memory_gigabytes_required
+    expected3 <- if (get_cluster() == "apollo") 450L else 550L
+    expect_equal(mem3, expected3)
 })
 
 # Runs anywhere: pure metadata, no cluster or scontrol needed.
 test_that("resource shortcut objects are well-formed tar_resources", {
     shortcuts <- c(
         "tiny", "small", "medium", "large", "large_mem", "large_mem_2x",
-        "long", "large_mem_xl", "xlarge", "huge"
+        "large_mem_3x", "long", "large_mem_xl", "xlarge", "huge"
     )
     for (nm in shortcuts) {
         res <- get(nm, envir = asNamespace("hprcc"))

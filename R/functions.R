@@ -561,6 +561,24 @@ configure_targets_options <- function() {
             slurm_mem_gigabytes = if (get_cluster() == "apollo") 200L else 250L,
             slurm_walltime_minutes = 720L
         ),
+        # Above large_mem_2x but still off bigmem. Added after a second pipeline
+        # (DCD.umass_kent.2025) reported measured peaks of 437.4 GB
+        # (pankbase_integrated) and 252 GB (Erdem UCell) - real demand between
+        # 250 GB and 600 GB that only large_mem_xl spanned, and that tier routes
+        # to bigmem. Their cost was concrete: on 2026-07-27 bigmem was fully
+        # allocated with 10+ jobs queued and SLURM estimated their start six days
+        # out, for a target that would have run immediately on `compute`.
+        #
+        # Cluster-gated on node memory, as large_mem_2x is. 550 GB schedules on
+        # gemini's 42 nodes with >=754 GB - still 8x bigmem's 5. Apollo has only
+        # 10 nodes at >=488 GB, so it gets 450 GB to stay inside them rather than
+        # recreating the scarcity this tier exists to avoid.
+        create_controller(
+            "large_mem_3x",
+            slurm_cpus = 8L,
+            slurm_mem_gigabytes = if (get_cluster() == "apollo") 450L else 550L,
+            slurm_walltime_minutes = 720L
+        ),
         # The other half of #33: a long-running target that is NOT memory-hungry
         # had no tier. Stock walltimes top out at 480 min on `compute`, so a
         # 12-hour step was forced onto large_mem_xl purely for its duration - and

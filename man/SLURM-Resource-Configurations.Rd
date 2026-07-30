@@ -9,6 +9,7 @@
 \alias{large}
 \alias{large_mem}
 \alias{large_mem_2x}
+\alias{large_mem_3x}
 \alias{long}
 \alias{large_mem_xl}
 \alias{xlarge}
@@ -30,6 +31,7 @@ The available configurations are:\tabular{lllll}{
    large \tab 8 \tab 80 \tab 360 \tab compute \cr
    large_mem \tab 8 \tab 100 \tab 480 \tab compute \cr
    large_mem_2x (b) \tab 8 \tab 250 / 200 \tab 720 \tab compute \cr
+   large_mem_3x (b) \tab 8 \tab 550 / 450 \tab 720 \tab compute \cr
    long \tab 4 \tab 100 \tab 1440 \tab compute \cr
    large_mem_xl \tab 8 \tab 600 \tab 2160 \tab bigmem \cr
    xlarge \tab 20 \tab 200 \tab 720 \tab compute \cr
@@ -41,13 +43,14 @@ The available configurations are:\tabular{lllll}{
 
 (a) GPUs only available on \emph{Gemini}
 
-(b) \code{large_mem_2x} is 250 GB on \emph{Gemini} and 200 GB on \emph{Apollo}: apollo's
-\code{all} partition has 20 nodes at 239 GB, which a 250 GB request would exclude,
-leaving only 10 candidates. 200 GB keeps all 30.
+(b) Memory differs per cluster, to stay inside each one's node sizes:
+\code{large_mem_2x} is 250 GB on \emph{Gemini} / 200 GB on \emph{Apollo} (apollo has 20 nodes
+at 239 GB that a 250 GB request would exclude); \code{large_mem_3x} is 550 GB /
+450 GB (apollo has only 10 nodes at >=488 GB).
 
-Use \code{large_mem_2x} for memory up to ~250 GB and \code{long} for targets that run
+Use \code{large_mem_2x} up to ~250 GB, \code{large_mem_3x} up to ~550 GB, and \code{long} for targets that run
 more than 8 hours without needing much memory. Reserve \code{large_mem_xl} for work
-genuinely above 250 GB - it is the only tier that leaves the general partition
+genuinely above 550 GB - it is the only tier that leaves the general partition
 (\code{bigmem} has 5 nodes against \code{compute}'s 85), so jobs there can queue for
 days.
 }
