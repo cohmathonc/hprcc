@@ -26,7 +26,7 @@ test_that("every exported resource shortcut names a registered controller", {
 
     shortcuts <- c(
         "tiny", "small", "medium", "large", "large_mem", "large_mem_2x",
-        "large_mem_3x", "long", "large_mem_xl", "xlarge", "huge"
+        "large_mem_3x", "long", "extra_long", "large_mem_xl", "xlarge", "huge"
     )
 
     for (nm in shortcuts) {
@@ -91,7 +91,7 @@ test_that("large_mem_2x memory fits the target cluster's nodes", {
 test_that("resource shortcut objects are well-formed tar_resources", {
     shortcuts <- c(
         "tiny", "small", "medium", "large", "large_mem", "large_mem_2x",
-        "large_mem_3x", "long", "large_mem_xl", "xlarge", "huge"
+        "large_mem_3x", "long", "extra_long", "large_mem_xl", "xlarge", "huge"
     )
     for (nm in shortcuts) {
         res <- get(nm, envir = asNamespace("hprcc"))

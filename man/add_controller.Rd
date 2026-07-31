@@ -9,7 +9,8 @@ add_controller(
   slurm_cpus,
   slurm_mem_gigabytes,
   slurm_walltime_minutes = 720L,
-  slurm_partition = default_partition()
+  slurm_partition = default_partition(),
+  tasks_max = 1L
 )
 }
 \arguments{
@@ -25,6 +26,15 @@ minutes. Defaults to 720 (12 hours).}
 
 \item{slurm_partition}{SLURM partition for job submission. Defaults to the
 cluster's default partition. See \link[=package-options]{package options}.}
+
+\item{tasks_max}{Number of targets a single worker will run before exiting.
+Defaults to \code{1L}, matching \code{\link[=create_controller]{create_controller()}}. Leave it at the default
+unless you have a specific reason not to: with \code{crew}'s own default of
+\code{Inf}, a worker keeps accepting targets until it idles out or SLURM kills
+it at the walltime, so a long second task can be killed part-way through
+and discard its hours. This argument was missing until 0.2.2 - custom
+controllers inherited the safe default but could not override it, and the
+behaviour was undocumented here.}
 }
 \value{
 Invisibly returns a \code{tar_resources} object for the new controller,

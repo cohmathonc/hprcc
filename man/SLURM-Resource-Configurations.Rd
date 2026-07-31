@@ -11,6 +11,7 @@
 \alias{large_mem_2x}
 \alias{large_mem_3x}
 \alias{long}
+\alias{extra_long}
 \alias{large_mem_xl}
 \alias{xlarge}
 \alias{huge}
@@ -33,6 +34,7 @@ The available configurations are:\tabular{lllll}{
    large_mem_2x (b) \tab 8 \tab 250 / 200 \tab 720 \tab compute \cr
    large_mem_3x (b) \tab 8 \tab 550 / 450 \tab 720 \tab compute \cr
    long \tab 4 \tab 100 \tab 1440 \tab compute \cr
+   extra_long \tab 4 \tab 100 \tab 4320 \tab compute \cr
    large_mem_xl \tab 8 \tab 600 \tab 2160 \tab bigmem \cr
    xlarge \tab 20 \tab 200 \tab 720 \tab compute \cr
    huge \tab 40 \tab 200 \tab 720 \tab compute \cr
@@ -49,7 +51,10 @@ at 239 GB that a 250 GB request would exclude); \code{large_mem_3x} is 550 GB /
 450 GB (apollo has only 10 nodes at >=488 GB).
 
 Use \code{large_mem_2x} up to ~250 GB, \code{large_mem_3x} up to ~550 GB, and \code{long} for targets that run
-more than 8 hours without needing much memory. Reserve \code{large_mem_xl} for work
+more than 8 hours without needing much memory. \code{extra_long} is \code{long} with 3 days
+instead of 1, for single-threaded work whose runtime is not predictable from input
+size - reach for it when a target has been killed at \code{long}'s ceiling, or when the
+spread of observed runtimes puts the tail near 24h. Reserve \code{large_mem_xl} for work
 genuinely above 550 GB - it is the only tier that leaves the general partition
 (\code{bigmem} has 5 nodes against \code{compute}'s 85), so jobs there can queue for
 days.

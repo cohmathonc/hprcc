@@ -1,3 +1,38 @@
+# hprcc 0.2.2
+
+## `extra_long` (4 CPUs, 100 GB, 72h, `compute`)
+
+`long` with three days instead of one. Added after a single SCTransform branch
+ran 23h+ at 99% CPU and was killed at `long`'s 24h ceiling, discarding the whole
+branch (haemProcessR#136).
+
+`long` was sized from a measured peak of 712 min. That sample missed the tail:
+the killed branch reached 1387 min and had not finished.
+
+The 24h ceiling was never a cluster limit - `compute` has
+`MaxTime=14-00:00:00`, and no QOS caps it lower. It was a tier gap.
+
+4320 min is deliberately loose rather than a tight fit around the 1387 min
+observed, because **runtime here is not predictable from data size**. Across 15
+libraries from one cohort, cell count against runtime gave Pearson r = -0.167
+(Spearman -0.082): 12,197 cells took 1h48m while 12,386 cells took 11h51m, and
+the largest library at 19,127 cells finished in 3h. Output object size was
+likewise uninformative (1.8x spread against >12x runtime spread, and
+non-monotonic). Until a real cost driver is identified (haemProcessR#135),
+headroom is the only defence available.
+
+Same shape as `long` otherwise - 4 CPUs and 100 GB - because the work this
+targets is single-threaded and modest in memory; it needs hours, not resources.
+
+## `add_controller()` gains `tasks_max`
+
+0.2.0 added `tasks_max = 1L` to `create_controller()` but not to
+`add_controller()`, which wraps it. Custom controllers therefore inherited the
+safe default and behaved correctly, but callers could not override it and
+nothing in `add_controller()`'s documentation said so - leaving the impression
+that custom controllers could not set it at all. Now an explicit argument,
+defaulting to `1L`, and documented with the reason it matters.
+
 # hprcc 0.2.1
 
 - **`large_mem_3x`** (8 CPUs, 550 GB gemini / 450 GB apollo, 12h, `compute`).

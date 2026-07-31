@@ -228,6 +228,14 @@ create_controller <- function(
 #'   minutes. Defaults to 720 (12 hours).
 #' @param slurm_partition SLURM partition for job submission. Defaults to the
 #'   cluster's default partition. See [package options][package-options].
+#' @param tasks_max Number of targets a single worker will run before exiting.
+#'   Defaults to `1L`, matching [create_controller()]. Leave it at the default
+#'   unless you have a specific reason not to: with `crew`'s own default of
+#'   `Inf`, a worker keeps accepting targets until it idles out or SLURM kills
+#'   it at the walltime, so a long second task can be killed part-way through
+#'   and discard its hours. This argument was missing until 0.2.2 - custom
+#'   controllers inherited the safe default but could not override it, and the
+#'   behaviour was undocumented here.
 #'
 #' @details
 #' This function is useful when a project requires custom SLURM resource
@@ -271,7 +279,8 @@ add_controller <- function(
     slurm_cpus,
     slurm_mem_gigabytes,
     slurm_walltime_minutes = 720L,
-    slurm_partition = default_partition()
+    slurm_partition = default_partition(),
+    tasks_max = 1L
 ) {
     # Create the new controller
     new_controller <- create_controller(
@@ -279,7 +288,8 @@ add_controller <- function(
         slurm_cpus = slurm_cpus,
         slurm_mem_gigabytes = slurm_mem_gigabytes,
         slurm_walltime_minutes = slurm_walltime_minutes,
-        slurm_partition = slurm_partition
+        slurm_partition = slurm_partition,
+        tasks_max = tasks_max
     )
 
     # Get the existing controller group
@@ -598,6 +608,26 @@ configure_targets_options <- function() {
             slurm_cpus = 4L,
             slurm_mem_gigabytes = 100L,
             slurm_walltime_minutes = 1440L
+        ),
+        # `extra_long`: same shape as `long`, 3x the hours. Added after a single
+        # SCTransform branch ran 23h+ at 99% CPU and was killed at `long`'s 24h
+        # ceiling, discarding the whole branch (haemProcessR#136). `long` was
+        # sized from a measured peak of 712 min; that sample missed the tail.
+        #
+        # The 24h ceiling was never a cluster limit - `compute` has
+        # MaxTime=14-00:00:00 - so this is a tier gap, not a scheduler one.
+        #
+        # 4320 min (3 days) is deliberately well clear of the 1387 min observed
+        # rather than a tight fit, because runtime here is not predictable from
+        # data size: across 15 libraries, cell count vs runtime gave Pearson
+        # r = -0.167 (12,197 cells -> 1h48m; 12,386 cells -> 11h51m). Until a
+        # real cost driver is identified (haemProcessR#135), headroom is the
+        # only defence.
+        create_controller(
+            "extra_long",
+            slurm_cpus = 4L,
+            slurm_mem_gigabytes = 100L,
+            slurm_walltime_minutes = 4320L
         ),
         # 2160 min (36h) is within bigmem's MaxTime of 2-00:00:00 and no QOS caps
         # it lower (cpubased allows 14 days), but it had never actually been
