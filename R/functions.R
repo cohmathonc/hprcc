@@ -438,6 +438,72 @@ slurm_default_partition <- function() {
     )
 }
 
+#' Cluster working-data root
+#'
+#' Where bulk working data lives on the current cluster. Deliberately **not**
+#' called `scratch_dir()`, because the two clusters do not share that concept:
+#'
+#' \itemize{
+#'   \item gemini - `/scratch/{user}`, genuinely per-user scratch
+#'   \item apollo - a shared lab directory with no per-user component
+#' }
+#'
+#' A function promising "per-user scratch" would therefore be wrong on apollo.
+#' Callers wanting a project path should build on this, e.g.
+#' `file.path(work_dir(), "myproject", "_targets")`.
+#'
+#' Resolution order: `hprcc.work_dir` option, then `HPRCC_WORK_DIR`
+#' environment variable, then the cluster default.
+#'
+#' @param ... Optional path components appended below the root, via [file.path()].
+#' @return Absolute path (character).
+#' @examples
+#' \dontrun{
+#' work_dir()
+#' work_dir("myproject", "_targets")
+#' }
+#' @export
+work_dir <- function(...) {
+    base <- if (!is.null(getOption("hprcc.work_dir"))) {
+        getOption("hprcc.work_dir")
+    } else if (nzchar(Sys.getenv("HPRCC_WORK_DIR"))) {
+        Sys.getenv("HPRCC_WORK_DIR")
+    } else {
+        cluster <- get_cluster()
+        if (identical(cluster, "gemini")) {
+            file.path("/scratch", Sys.info()[["user"]])
+        } else if (identical(cluster, "apollo")) {
+            "/labs/rrockne/MHO"
+        } else {
+            cli::cli_abort(c(
+                "Cannot determine a working directory for cluster {.val {cluster}}.",
+                "i" = "Set {.envvar HPRCC_WORK_DIR} or the {.code hprcc.work_dir} option."
+            ))
+        }
+    }
+    if (length(list(...)) > 0L) file.path(base, ...) else base
+}
+
+#' Nextflow work directory
+#'
+#' Nextflow's `workDir` for the current cluster - a **sibling** of the nf-core
+#' run directory, not a child of it.
+#'
+#' The sibling arrangement is canonical as of 2026-07-31. gemini already worked
+#' this way; apollo previously nested it inside the run directory and carried a
+#' redundant `/net/nfs-irwrsrchnas01` NFS prefix. Gemini's path was left exactly
+#' as it was so that in-flight runs and `-resume` were not invalidated.
+#'
+#' @return Absolute path (character).
+#' @examples
+#' \dontrun{
+#' nf_workdir()
+#' }
+#' @export
+nf_workdir <- function() {
+    work_dir("nf-workdir")
+}
+
 default_partition <- function() {
     # Check for partition in options
     if (!is.null(getOption("hprcc.default_partition"))) {
