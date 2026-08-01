@@ -1,3 +1,26 @@
+# hprcc 0.2.3
+
+## `work_dir()` and `nf_workdir()`
+
+Cluster-aware path helpers, so downstream packages stop hardcoding
+`/scratch/someone/...` into function defaults (which makes them usable only by
+the account that wrote them).
+
+Deliberately **not** named `scratch_dir()`: the two clusters do not share that
+concept. gemini's working root is genuinely per-user (`/scratch/{user}`), while
+apollo's is a shared lab directory with no per-user component. A function
+promising "per-user scratch" would be wrong on apollo, so the name describes what
+it actually is - the cluster's working-data root.
+
+`nf_workdir()` returns Nextflow's `workDir` as a **sibling** of the nf-core run
+directory. gemini already worked that way and its path is unchanged, so in-flight
+runs and `-resume` are unaffected. apollo previously nested it inside the run
+directory with a redundant `/net/nfs-irwrsrchnas01` NFS prefix; that is now
+harmonised to the sibling arrangement.
+
+Both honour an option then an env var (`hprcc.work_dir` / `HPRCC_WORK_DIR`)
+before falling back to the cluster default.
+
 # hprcc 0.2.2
 
 ## `extra_long` (4 CPUs, 100 GB, 72h, `compute`)
