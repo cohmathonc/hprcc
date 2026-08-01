@@ -464,10 +464,39 @@ slurm_default_partition <- function() {
 #' }
 #' @export
 work_dir <- function(...) {
+    # An override is user-supplied, so it cannot be trusted to honour the
+    # "absolute path" contract this function documents. Validate rather than
+    # silently return something relative, empty or vectorised, which would only
+    # surface later as a file written to the wrong place.
+    validate_override <- function(value, source) {
+        if (length(value) != 1L || is.na(value) || !is.character(value) ||
+            !nzchar(value)) {
+            cli::cli_abort(c(
+                "{source} must be a single non-empty, non-NA string.",
+                "x" = "Got {.val {value}}."
+            ))
+        }
+        value <- path.expand(value)
+        if (!startsWith(value, "/")) {
+            cli::cli_abort(c(
+                "{source} must be an absolute path.",
+                "x" = "Got {.path {value}}.",
+                "i" = "{.fn work_dir} is documented to return an absolute path."
+            ))
+        }
+        value
+    }
+
     base <- if (!is.null(getOption("hprcc.work_dir"))) {
-        getOption("hprcc.work_dir")
+        validate_override(
+            getOption("hprcc.work_dir"),
+            "The {.code hprcc.work_dir} option"
+        )
     } else if (nzchar(Sys.getenv("HPRCC_WORK_DIR"))) {
-        Sys.getenv("HPRCC_WORK_DIR")
+        validate_override(
+            Sys.getenv("HPRCC_WORK_DIR"),
+            "The {.envvar HPRCC_WORK_DIR} environment variable"
+        )
     } else {
         cluster <- get_cluster()
         if (identical(cluster, "gemini")) {

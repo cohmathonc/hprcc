@@ -152,3 +152,91 @@ test_that("init_multisession works correctly outside SLURM environment", {
         )
     )
 })
+# ---------------------------------------------------------------------------
+# work_dir() / nf_workdir()
+#
+# Cluster defaults are exercised by mocking get_cluster(), so these run
+# anywhere - no HPRCC host required.
+# ---------------------------------------------------------------------------
+
+test_that("work_dir uses the option ahead of everything else", {
+    withr::with_envvar(c(HPRCC_WORK_DIR = "/env/path"), {
+        withr::with_options(list(hprcc.work_dir = "/opt/path"), {
+            expect_equal(work_dir(), "/opt/path")
+        })
+    })
+})
+
+test_that("work_dir falls back to the env var when no option is set", {
+    withr::with_options(list(hprcc.work_dir = NULL), {
+        withr::with_envvar(c(HPRCC_WORK_DIR = "/env/path"), {
+            expect_equal(work_dir(), "/env/path")
+        })
+    })
+})
+
+test_that("work_dir appends path components", {
+    withr::with_options(list(hprcc.work_dir = "/base"), {
+        expect_equal(work_dir("proj", "_targets"), "/base/proj/_targets")
+    })
+})
+
+test_that("work_dir returns gemini's per-user scratch by default", {
+    withr::with_options(list(hprcc.work_dir = NULL), {
+        withr::with_envvar(c(HPRCC_WORK_DIR = NA), {
+            testthat::local_mocked_bindings(get_cluster = function() "gemini")
+            expect_equal(work_dir(), file.path("/scratch", Sys.info()[["user"]]))
+        })
+    })
+})
+
+test_that("work_dir returns apollo's shared lab dir, with no user component", {
+    withr::with_options(list(hprcc.work_dir = NULL), {
+        withr::with_envvar(c(HPRCC_WORK_DIR = NA), {
+            testthat::local_mocked_bindings(get_cluster = function() "apollo")
+            # Deliberately NOT per-user - apollo's root is shared, which is why
+            # this helper is not called scratch_dir().
+            expect_equal(work_dir(), "/labs/rrockne/MHO")
+            expect_false(grepl(Sys.info()[["user"]], work_dir(), fixed = TRUE))
+        })
+    })
+})
+
+test_that("work_dir aborts on an unrecognised cluster rather than guessing", {
+    withr::with_options(list(hprcc.work_dir = NULL), {
+        withr::with_envvar(c(HPRCC_WORK_DIR = NA), {
+            testthat::local_mocked_bindings(get_cluster = function() NULL)
+            expect_error(work_dir(), "Cannot determine a working directory")
+        })
+    })
+})
+
+test_that("work_dir rejects overrides that break the absolute-path contract", {
+    withr::with_options(list(hprcc.work_dir = "relative/path"), {
+        expect_error(work_dir(), "must be an absolute path")
+    })
+    withr::with_options(list(hprcc.work_dir = ""), {
+        expect_error(work_dir(), "non-empty")
+    })
+    withr::with_options(list(hprcc.work_dir = c("/a", "/b")), {
+        expect_error(work_dir(), "single non-empty")
+    })
+    withr::with_options(list(hprcc.work_dir = NA_character_), {
+        expect_error(work_dir(), "single non-empty")
+    })
+})
+
+test_that("work_dir expands ~ in an override", {
+    withr::with_options(list(hprcc.work_dir = "~/somewhere"), {
+        expect_equal(work_dir(), path.expand("~/somewhere"))
+    })
+})
+
+test_that("nf_workdir is a sibling of the run dir, not a child", {
+    withr::with_options(list(hprcc.work_dir = "/scratch/someone"), {
+        expect_equal(nf_workdir(), "/scratch/someone/nf-workdir")
+        # The sibling arrangement is the point: it must not land inside an
+        # nf-core run directory.
+        expect_false(grepl("nf-core", nf_workdir(), fixed = TRUE))
+    })
+})
