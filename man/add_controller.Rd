@@ -10,7 +10,8 @@ add_controller(
   slurm_mem_gigabytes,
   slurm_walltime_minutes = 720L,
   slurm_partition = default_partition(),
-  tasks_max = 1L
+  tasks_max = 1L,
+  crashes_max = 2L
 )
 }
 \arguments{
@@ -35,6 +36,9 @@ it at the walltime, so a long second task can be killed part-way through
 and discard its hours. This argument was missing until 0.2.2 - custom
 controllers inherited the safe default but could not override it, and the
 behaviour was undocumented here.}
+
+\item{crashes_max}{Times a crashed worker is retried. Defaults to \code{2L},
+matching \code{\link[=create_controller]{create_controller()}}.}
 }
 \value{
 Invisibly returns a \code{tar_resources} object for the new controller,

@@ -1,3 +1,14 @@
+# hprcc 0.2.5
+
+## `crashes_max` defaults to 2, not crew's 5 (#38)
+
+`create_controller()` and `add_controller()` take a new `crashes_max`
+argument, passed to `crew.cluster::crew_controller_slurm()`. It defaults to
+`2L`. crew changes no resources between attempts, so a retry only helps a
+transient SLURM or network blip; against a deterministic failure such as OOM,
+each of crew's default 5 retries was a wasted allocation. All built-in tiers
+now use 2.
+
 # hprcc 0.2.4
 
 ## `run_slurm_job()` asks SLURM before resubmitting (#39)
