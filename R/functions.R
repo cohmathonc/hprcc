@@ -586,6 +586,19 @@ configure_targets_options <- function() {
         ""
     }
     HPRCC$r_libs_site <- r_libs_site()
+    # Workers load crew from this library. If it is missing there, every worker
+    # dies at startup and tar_make() waits with no output and no failed target -
+    # 7 silent hours in one case (#31). Warn at load instead.
+    if (length(HPRCC$r_libs_site) == 1L && nzchar(HPRCC$r_libs_site) &&
+        dir.exists(HPRCC$r_libs_site) &&
+        !dir.exists(file.path(HPRCC$r_libs_site, "crew"))) {
+        cli::cli_warn(c(
+            "Worker library {.path {HPRCC$r_libs_site}} has no {.pkg crew}.",
+            x = "crew workers will fail to start and tar_make() will hang.",
+            i = "Set {.envvar R_LIBS_SITE} (or option {.code hprcc.r_libs_site})
+                 to a library that has crew installed."
+        ))
+    }
     HPRCC$slurm_account <- if (
         nzchar(account <- getOption("hprcc.slurm_account", ""))
     )
