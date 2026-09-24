@@ -4,6 +4,9 @@
 #' to very large tasks with high computational demands. Utilizes `targets::tar_resources`
 #' with specific controller settings suitable for the respective task sizes.
 #'
+#' Call [slurm_tiers()] to see the values actually in effect on this cluster.
+#' The table below is the reference; `slurm_tiers()` reads the live controllers.
+#'
 #' The available configurations are:
 #'
 #' | Job Type          | CPUs | Memory (GB)          | Time (minutes)    | Partition        |
@@ -117,3 +120,65 @@ gpu_medium <- targets::tar_resources(
 gpu_large <- targets::tar_resources(
   crew = targets::tar_resources_crew(controller = "gpu_large")
 )
+
+#' List The SLURM Resource Tiers
+#'
+#' Returns the resource tiers as a data frame, read from the live controllers,
+#' so the values are the ones actually in effect on this cluster rather than
+#' what the documentation says (#31).
+#'
+#' @param tier Optional tier name(s) to return, e.g. `"large_mem"`.
+#' @param min_memory_gb Optional. Return only tiers with at least this much
+#'   memory, smallest first - "which tier can hold this?".
+#'
+#' @return A data frame with columns `tier`, `cpus`, `memory_gb`, `time_min`,
+#'   `partition`, `gpu`.
+#'
+#' @examples
+#' \dontrun{
+#' slurm_tiers()
+#' slurm_tiers("large_mem")
+#' slurm_tiers(min_memory_gb = 150)
+#' }
+#' @seealso [SLURM-Resource-Configurations]
+#' @export
+slurm_tiers <- function(tier = NULL, min_memory_gb = NULL) {
+    group <- targets::tar_option_get("controller")
+    if (is.null(group)) {
+        cli::cli_abort("No controller group found. Load {.pkg hprcc} first.")
+    }
+    ctrls <- group$controllers
+    ctrls <- ctrls[vapply(ctrls, function(c) !is.null(c$launcher$options_cluster),
+                          logical(1))]
+    out <- data.frame(
+        tier = names(ctrls),
+        cpus = vapply(ctrls, function(c)
+            as.integer(c$launcher$options_cluster$cpus_per_task), integer(1)),
+        memory_gb = vapply(ctrls, function(c)
+            as.numeric(c$launcher$options_cluster$memory_gigabytes_required),
+            numeric(1)),
+        time_min = vapply(ctrls, function(c)
+            as.integer(c$launcher$options_cluster$time_minutes), integer(1)),
+        partition = vapply(ctrls, function(c)
+            paste(c$launcher$options_cluster$partition, collapse = ","),
+            character(1)),
+        gpu = vapply(ctrls, function(c)
+            any(grepl("gres gpu", c$launcher$options_cluster$script_lines)),
+            logical(1)),
+        row.names = NULL,
+        stringsAsFactors = FALSE
+    )
+    if (!is.null(tier)) {
+        unknown <- setdiff(tier, out$tier)
+        if (length(unknown)) {
+            cli::cli_abort("Unknown tier{?s}: {.val {unknown}}.")
+        }
+        out <- out[out$tier %in% tier, , drop = FALSE]
+    }
+    if (!is.null(min_memory_gb)) {
+        out <- out[out$memory_gb >= min_memory_gb, , drop = FALSE]
+        out <- out[order(out$memory_gb, out$cpus), , drop = FALSE]
+    }
+    rownames(out) <- NULL
+    out
+}

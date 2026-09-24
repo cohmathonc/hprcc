@@ -24,6 +24,9 @@ to very large tasks with high computational demands. Utilizes \code{targets::tar
 with specific controller settings suitable for the respective task sizes.
 }
 \details{
+Call \code{\link[=slurm_tiers]{slurm_tiers()}} to see the values actually in effect on this cluster.
+The table below is the reference; \code{slurm_tiers()} reads the live controllers.
+
 The available configurations are:\tabular{lllll}{
    Job Type \tab CPUs \tab Memory (GB) \tab Time (minutes) \tab Partition \cr
    tiny \tab 2 \tab 8 \tab 60 \tab compute \cr
