@@ -49,7 +49,8 @@ Submits a shell command as a SLURM job and tracks completion via output files.
 Implements a "fire and track" pattern for targets integration:
 \enumerate{
 \item Check if completion files exist (job already done) -> return complete result
-\item Check if script exists with SLURM output (already submitted) -> check status
+\item Ask SLURM whether a job with this name is pending/running -> already submitted
+\item Check if script exists with SLURM output (fallback) -> check status
 \item Otherwise, create script and submit via sbatch -> return submitted result
 }
 }
