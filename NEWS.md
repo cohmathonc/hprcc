@@ -1,3 +1,15 @@
+# hprcc 0.2.4
+
+## `run_slurm_job()` asks SLURM before resubmitting (#39)
+
+`run_slurm_job()` used to decide whether a job was already live from the
+files in its working directory alone. If the script was missing, or a pending
+job had not yet written its `slurm-<id>.out`, it submitted a second copy of a
+running job. It now asks SLURM first, by job name, via the new
+`find_live_slurm_job()`. The file checks remain as the fallback, and still
+handle finished and failed jobs. Off-cluster, where `squeue` does not exist,
+behaviour is unchanged.
+
 # hprcc 0.2.3
 
 ## `work_dir()` and `nf_workdir()`

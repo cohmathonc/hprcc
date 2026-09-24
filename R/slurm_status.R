@@ -47,6 +47,31 @@ check_slurm_status <- function(job_id) {
 }
 
 
+#' Find A Live SLURM Job By Name
+#'
+#' Asks SLURM whether one of your jobs with this name is pending or running.
+#'
+#' @param name Character. The SLURM job name.
+#'
+#' @return The job ID as a character string, or `NULL` if none is live.
+#'
+#' @export
+find_live_slurm_job <- function(name) {
+    # No squeue (CI, off-cluster) means SLURM cannot be asked: return NULL and
+    # let run_slurm_job() fall back to its file checks, as before.
+    res <- tryCatch(
+        suppressWarnings(
+            system2("squeue", c("--me", "--name", name, "-h", "-o", "%i"),
+                    stdout = TRUE, stderr = TRUE)
+        ),
+        error = function(e) character(0)
+    )
+    ids <- trimws(res)
+    ids <- ids[grepl("^[0-9]+$", ids)]
+    if (length(ids)) ids[1] else NULL
+}
+
+
 #' Verify Completion Files Exist
 #'
 #' Checks that expected output files exist for a completed SLURM job.

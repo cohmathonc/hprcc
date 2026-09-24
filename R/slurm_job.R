@@ -7,8 +7,9 @@
 #' Submits a shell command as a SLURM job and tracks completion via output files.
 #' Implements a "fire and track" pattern for targets integration:
 #' 1. Check if completion files exist (job already done) -> return complete result
-#' 2. Check if script exists with SLURM output (already submitted) -> check status
-#' 3. Otherwise, create script and submit via sbatch -> return submitted result
+#' 2. Ask SLURM whether a job with this name is pending/running -> already submitted
+#' 3. Check if script exists with SLURM output (fallback) -> check status
+#' 4. Otherwise, create script and submit via sbatch -> return submitted result
 #'
 #' Use with `cue = tar_cue(mode = "always")` and `deployment = "main"` in targets.
 #'
@@ -105,7 +106,22 @@ run_slurm_job <- function(
         }
     }
 
-    # 2. Check if already submitted
+    # 2. Ask SLURM whether a job with this name is already live. SLURM is the
+    # authority; the files below are only a fallback. Checking files alone
+    # submitted duplicates when the script was missing or a pending job had
+    # not yet written its slurm-<id>.out (#39).
+    if (!force_resubmit) {
+        live_id <- find_live_slurm_job(name)
+        if (!is.null(live_id)) {
+            cli::cli_alert_info("Job already submitted: {name} (ID: {live_id})")
+            return(slurm_job_result(
+                script_path, live_id, "already_submitted",
+                working_dir, resolved_completion
+            ))
+        }
+    }
+
+    # 3. Fall back to the working-dir files
     if (file.exists(script_path) && !force_resubmit) {
         slurm_files <- list.files(
             working_dir, pattern = "^slurm-[0-9]+\\.out$", full.names = TRUE
@@ -135,7 +151,7 @@ run_slurm_job <- function(
         }
     }
 
-    # 3. Create directory and script
+    # 4. Create directory and script
     if (!dir.exists(working_dir)) {
         dir.create(working_dir, recursive = TRUE, showWarnings = FALSE)
     }
@@ -152,7 +168,7 @@ run_slurm_job <- function(
     writeLines(script_content, script_path)
     Sys.chmod(script_path, mode = "0755")
 
-    # 4. Submit job
+    # 5. Submit job
     submit_result <- system2("sbatch", script_path, stdout = TRUE, stderr = TRUE)
     exit_status <- attr(submit_result, "status")
 
