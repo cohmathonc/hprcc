@@ -11,7 +11,8 @@ create_controller(
   slurm_walltime_minutes = 720L,
   slurm_workers = 350L,
   slurm_partition = default_partition(),
-  tasks_max = 1L
+  tasks_max = 1L,
+  crashes_max = 2L
 )
 }
 \arguments{
@@ -30,7 +31,13 @@ create_controller(
 \item{tasks_max}{Number of targets a single worker will run before exiting.
 Defaults to \code{1L}: one task per worker, so each target gets a fresh R process
 sized for it and \code{slurm_walltime_minutes} means what it says - a per-task
-limit.
+limit.}
+
+\item{crashes_max}{Times a crashed worker is retried before the target
+errors. Defaults to \code{2L}, not \code{crew}'s \code{5L}: crew changes no resources
+between attempts, so a retry only helps a transient SLURM or network blip,
+and against a deterministic failure such as OOM every retry is a wasted
+allocation (#38).
 
 This was previously unset, taking \code{crew}'s default of \code{Inf}, which meant a
 worker kept accepting targets until it idled out or SLURM killed it at the

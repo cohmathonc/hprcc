@@ -101,6 +101,11 @@ get_cluster <- function() {
 #'   Defaults to `1L`: one task per worker, so each target gets a fresh R process
 #'   sized for it and `slurm_walltime_minutes` means what it says - a per-task
 #'   limit.
+#' @param crashes_max Times a crashed worker is retried before the target
+#'   errors. Defaults to `2L`, not `crew`'s `5L`: crew changes no resources
+#'   between attempts, so a retry only helps a transient SLURM or network blip,
+#'   and against a deterministic failure such as OOM every retry is a wasted
+#'   allocation (#38).
 #'
 #'   This was previously unset, taking `crew`'s default of `Inf`, which meant a
 #'   worker kept accepting targets until it idled out or SLURM killed it at the
@@ -156,7 +161,8 @@ create_controller <- function(
     slurm_walltime_minutes = 720L,
     slurm_workers = 350L,
     slurm_partition = default_partition(),
-    tasks_max = 1L
+    tasks_max = 1L,
+    crashes_max = 2L
 ) {
     # GPU check
     if (grepl("gpu", slurm_partition)) {
@@ -204,6 +210,7 @@ create_controller <- function(
         seconds_idle = 30L,
         garbage_collection = TRUE,
         tasks_max = tasks_max,
+        crashes_max = crashes_max,
         options_cluster = slurm_options,
         options_metrics = crew::crew_options_metrics(
             path = "/dev/stdout",
@@ -237,6 +244,8 @@ create_controller <- function(
 #'   controllers inherited the safe default but could not override it, and the
 #'   behaviour was undocumented here.
 #'
+#' @param crashes_max Times a crashed worker is retried. Defaults to `2L`,
+#'   matching [create_controller()].
 #' @details
 #' This function is useful when a project requires custom SLURM resource
 #' configurations beyond the pre-defined controllers. For example, a job might
@@ -280,7 +289,8 @@ add_controller <- function(
     slurm_mem_gigabytes,
     slurm_walltime_minutes = 720L,
     slurm_partition = default_partition(),
-    tasks_max = 1L
+    tasks_max = 1L,
+    crashes_max = 2L
 ) {
     # Create the new controller
     new_controller <- create_controller(
@@ -289,7 +299,8 @@ add_controller <- function(
         slurm_mem_gigabytes = slurm_mem_gigabytes,
         slurm_walltime_minutes = slurm_walltime_minutes,
         slurm_partition = slurm_partition,
-        tasks_max = tasks_max
+        tasks_max = tasks_max,
+        crashes_max = crashes_max
     )
 
     # Get the existing controller group
