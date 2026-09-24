@@ -5,8 +5,10 @@
 `run_slurm_job()` used to decide whether a job was already live from the
 files in its working directory alone. If the script was missing, or a pending
 job had not yet written its `slurm-<id>.out`, it submitted a second copy of a
-running job. It now asks SLURM first, by job name, via the new
-`find_live_slurm_job()`. The file checks remain as the fallback, and still
+running job. It now asks SLURM first, via the new `find_live_slurm_job()`,
+for a live job with the same name AND the same working directory. A name only
+has to be unique per directory, as before. Scripts now set
+`#SBATCH --chdir=<working_dir>` so SLURM records that directory. The file checks remain as the fallback, and still
 handle finished and failed jobs. Off-cluster, where `squeue` does not exist,
 behaviour is unchanged.
 

@@ -111,7 +111,7 @@ run_slurm_job <- function(
     # submitted duplicates when the script was missing or a pending job had
     # not yet written its slurm-<id>.out (#39).
     if (!force_resubmit) {
-        live_id <- find_live_slurm_job(name)
+        live_id <- find_live_slurm_job(name, working_dir)
         if (!is.null(live_id)) {
             cli::cli_alert_info("Job already submitted: {name} (ID: {live_id})")
             return(slurm_job_result(
@@ -363,6 +363,10 @@ generate_slurm_script <- function(
     lines <- c(
         "#!/bin/bash",
         paste0("#SBATCH --job-name=", name),
+        # --chdir makes SLURM record working_dir as the job's WorkDir, which
+        # find_live_slurm_job() matches on (#39). Without it WorkDir is wherever
+        # sbatch was called from.
+        paste0("#SBATCH --chdir=", working_dir),
         "#SBATCH --export=NONE",
         "#SBATCH --get-user-env=L",
         paste0("#SBATCH --output=", working_dir, "/slurm-%j.out"),
