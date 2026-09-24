@@ -1,3 +1,21 @@
+# hprcc 0.2.6
+
+## `slurm_tiers()` (#31)
+
+Lists the resource tiers as a data frame, read from the live controllers, so
+it shows the values actually in effect on this cluster. Filter by name, or by
+`min_memory_gb` to find which tiers can hold a given amount of memory.
+
+## Worker-library check (#31)
+
+At load, hprcc warns if the worker library (`R_LIBS_SITE` /
+`hprcc.r_libs_site`) has no `crew`. Without it every crew worker dies at
+startup and `tar_make()` waits with no output.
+
+## `add_controller()` accepts `slurm_workers` (#36)
+
+Custom controllers are no longer fixed at 350 workers.
+
 # hprcc 0.2.5
 
 ## `crashes_max` defaults to 2, not crew's 5 (#38)
