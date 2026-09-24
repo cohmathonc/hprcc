@@ -9,6 +9,7 @@ add_controller(
   slurm_cpus,
   slurm_mem_gigabytes,
   slurm_walltime_minutes = 720L,
+  slurm_workers = 350L,
   slurm_partition = default_partition(),
   tasks_max = 1L,
   crashes_max = 2L
@@ -24,6 +25,10 @@ existing controller names.}
 
 \item{slurm_walltime_minutes}{Maximum allowed execution time per task, in
 minutes. Defaults to 720 (12 hours).}
+
+\item{slurm_workers}{Maximum number of workers this controller runs at once.
+Defaults to \code{350L}, matching \code{\link[=create_controller]{create_controller()}}. Lower it to limit how
+many SLURM jobs one controller submits in a burst (#36).}
 
 \item{slurm_partition}{SLURM partition for job submission. Defaults to the
 cluster's default partition. See \link[=package-options]{package options}.}

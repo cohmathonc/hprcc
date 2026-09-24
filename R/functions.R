@@ -244,6 +244,9 @@ create_controller <- function(
 #'   controllers inherited the safe default but could not override it, and the
 #'   behaviour was undocumented here.
 #'
+#' @param slurm_workers Maximum number of workers this controller runs at once.
+#'   Defaults to `350L`, matching [create_controller()]. Lower it to limit how
+#'   many SLURM jobs one controller submits in a burst (#36).
 #' @param crashes_max Times a crashed worker is retried. Defaults to `2L`,
 #'   matching [create_controller()].
 #' @details
@@ -288,6 +291,7 @@ add_controller <- function(
     slurm_cpus,
     slurm_mem_gigabytes,
     slurm_walltime_minutes = 720L,
+    slurm_workers = 350L,
     slurm_partition = default_partition(),
     tasks_max = 1L,
     crashes_max = 2L
@@ -298,6 +302,7 @@ add_controller <- function(
         slurm_cpus = slurm_cpus,
         slurm_mem_gigabytes = slurm_mem_gigabytes,
         slurm_walltime_minutes = slurm_walltime_minutes,
+        slurm_workers = slurm_workers,
         slurm_partition = slurm_partition,
         tasks_max = tasks_max,
         crashes_max = crashes_max
